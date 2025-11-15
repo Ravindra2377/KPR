@@ -8,6 +8,7 @@ import authRoutes from "./routes/auth";
 import ideaRoutes from "./routes/ideas";
 import roomRoutes from "./routes/rooms";
 import userRoutes from "./routes/user";
+import oracleRoutes from "./routes/oracle";
 import RoomMessage from "./models/RoomMessage";
 
 dotenv.config();
@@ -23,6 +24,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/ideas", ideaRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/oracle", oracleRoutes);
 
 app.get("/", (_req, res) => res.send("KPR Backend Running"));
 

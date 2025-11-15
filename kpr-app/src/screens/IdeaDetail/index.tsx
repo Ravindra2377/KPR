@@ -2,12 +2,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import api from "../../api/client";
 import { colors } from "../../theme/colors";
-import { RouteProp, useRoute } from "@react-navigation/native";
+import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
 
 type RouteProps = RouteProp<{ params: { id: string } }, "params">;
 
 export default function IdeaDetail() {
   const route = useRoute<RouteProps>();
+  const nav = useNavigation<any>();
   const { id } = route.params;
   const [idea, setIdea] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -65,6 +66,13 @@ export default function IdeaDetail() {
           <Text style={styles.countText}>{idea.appreciationCount || 0}</Text>
         </View>
       </View>
+
+      <TouchableOpacity
+        style={[styles.button, styles.oracleButton]}
+        onPress={() => nav.navigate("Oracle", { ideaText: idea.description })}
+      >
+        <Text style={styles.buttonText}>Ask Oracle About This Idea</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -80,5 +88,6 @@ const styles = StyleSheet.create({
   countBox: { backgroundColor: colors.surface, padding: 12, borderRadius: 8, justifyContent: "center", alignItems: "center" },
   countText: { color: colors.textPrimary, fontWeight: "600" },
   actionsRow: { flexDirection: "row", marginTop: 20, alignItems: "center" },
-  spacer: { width: 12 }
+  spacer: { width: 12 },
+  oracleButton: { marginTop: 20 }
 });

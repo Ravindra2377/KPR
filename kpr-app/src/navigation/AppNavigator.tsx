@@ -8,6 +8,7 @@ import IdeaDetail from "../screens/IdeaDetail";
 import IdeaComposer from "../screens/IdeaComposer";
 import RoomList, { Room } from "../screens/RoomList";
 import RoomChat from "../screens/RoomChat";
+import Oracle from "../screens/Oracle";
 import Profile from "../screens/Profile";
 import EditProfile from "../screens/EditProfile";
 
@@ -19,6 +20,7 @@ export type RootStackParamList = {
   IdeaComposer: undefined;
   RoomList: undefined;
   RoomChat: { room: Room };
+  Oracle: { ideaText?: string } | undefined;
   Profile: undefined;
   EditProfile: undefined;
 };
@@ -36,6 +38,7 @@ export default function AppNavigator() {
         <Stack.Screen name="IdeaComposer" component={IdeaComposer} />
         <Stack.Screen name="RoomList" component={RoomList} />
         <Stack.Screen name="RoomChat" component={RoomChat} />
+  <Stack.Screen name="Oracle" component={Oracle} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="EditProfile" component={EditProfile} />
       </Stack.Navigator>

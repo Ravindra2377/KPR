@@ -31,6 +31,13 @@ export default function TempleHall() {
 
         <TouchableOpacity
           style={[styles.button, styles.panelButton, styles.buttonGap]}
+          onPress={() => nav.navigate("Oracle")}
+        >
+          <Text style={styles.buttonSecondary}>Ask the Oracle</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.panelButton, styles.buttonGap]}
           onPress={() => nav.navigate("Profile")}
         >
           <Text style={styles.buttonSecondary}>Profile & Avatar</Text>
