@@ -6,6 +6,8 @@ import TempleHall from "../screens/TempleHall";
 import IdeaList from "../screens/IdeaList";
 import IdeaDetail from "../screens/IdeaDetail";
 import IdeaComposer from "../screens/IdeaComposer";
+import RoomList, { Room } from "../screens/RoomList";
+import RoomChat from "../screens/RoomChat";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -13,6 +15,8 @@ export type RootStackParamList = {
   IdeaList: undefined;
   IdeaDetail: { id: string };
   IdeaComposer: undefined;
+  RoomList: undefined;
+  RoomChat: { room: Room };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -26,6 +30,8 @@ export default function AppNavigator() {
         <Stack.Screen name="IdeaList" component={IdeaList} />
         <Stack.Screen name="IdeaDetail" component={IdeaDetail} />
         <Stack.Screen name="IdeaComposer" component={IdeaComposer} />
+        <Stack.Screen name="RoomList" component={RoomList} />
+        <Stack.Screen name="RoomChat" component={RoomChat} />
       </Stack.Navigator>
     </NavigationContainer>
   );

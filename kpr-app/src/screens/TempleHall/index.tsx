@@ -17,6 +17,10 @@ export default function TempleHall() {
       <TouchableOpacity style={styles.secondaryButton} onPress={() => nav.navigate("IdeaComposer")}>
         <Text style={styles.secondaryButtonText}>Create New Idea</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.secondaryButton, styles.roomsButton]} onPress={() => nav.navigate("RoomList")}>
+        <Text style={styles.secondaryButtonText}>Join Creative Rooms</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -41,6 +45,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.panel,
     alignSelf: "flex-start"
+  },
+  roomsButton: {
+    backgroundColor: colors.surface,
+    borderColor: colors.panel,
+    borderWidth: StyleSheet.hairlineWidth
   },
   secondaryButtonText: { color: colors.textSecondary }
 });

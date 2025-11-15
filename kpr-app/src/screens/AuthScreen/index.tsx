@@ -16,6 +16,7 @@ export default function AuthScreen() {
       const res = await api.post("/auth/register", { name, email, password });
       if (res.data?.token) {
         (globalThis as any).__KPR_TOKEN = res.data.token;
+        (globalThis as any).__KPR_USER = res.data.user;
         nav.navigate("TempleHall");
       }
     } catch (err: any) {
@@ -28,6 +29,7 @@ export default function AuthScreen() {
       const res = await api.post("/auth/login", { email, password });
       if (res.data?.token) {
         (globalThis as any).__KPR_TOKEN = res.data.token;
+        (globalThis as any).__KPR_USER = res.data.user;
         nav.navigate("TempleHall");
       }
     } catch (err: any) {
