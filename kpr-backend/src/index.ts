@@ -7,6 +7,7 @@ import { connectDB } from "./config/db";
 import authRoutes from "./routes/auth";
 import ideaRoutes from "./routes/ideas";
 import roomRoutes from "./routes/rooms";
+import userRoutes from "./routes/user";
 import RoomMessage from "./models/RoomMessage";
 
 dotenv.config();
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/ideas", ideaRoutes);
 app.use("/api/rooms", roomRoutes);
+app.use("/api/users", userRoutes);
 
 app.get("/", (_req, res) => res.send("KPR Backend Running"));
 

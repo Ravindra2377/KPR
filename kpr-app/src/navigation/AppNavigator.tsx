@@ -8,6 +8,8 @@ import IdeaDetail from "../screens/IdeaDetail";
 import IdeaComposer from "../screens/IdeaComposer";
 import RoomList, { Room } from "../screens/RoomList";
 import RoomChat from "../screens/RoomChat";
+import Profile from "../screens/Profile";
+import EditProfile from "../screens/EditProfile";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -17,6 +19,8 @@ export type RootStackParamList = {
   IdeaComposer: undefined;
   RoomList: undefined;
   RoomChat: { room: Room };
+  Profile: undefined;
+  EditProfile: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -32,6 +36,8 @@ export default function AppNavigator() {
         <Stack.Screen name="IdeaComposer" component={IdeaComposer} />
         <Stack.Screen name="RoomList" component={RoomList} />
         <Stack.Screen name="RoomChat" component={RoomChat} />
+        <Stack.Screen name="Profile" component={Profile} />
+        <Stack.Screen name="EditProfile" component={EditProfile} />
       </Stack.Navigator>
     </NavigationContainer>
   );

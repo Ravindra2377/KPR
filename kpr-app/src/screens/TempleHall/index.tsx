@@ -28,6 +28,13 @@ export default function TempleHall() {
         >
           <Text style={styles.buttonSecondary}>Creative Rooms</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.panelButton, styles.buttonGap]}
+          onPress={() => nav.navigate("Profile")}
+        >
+          <Text style={styles.buttonSecondary}>Profile & Avatar</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors } from "../../theme/colors";
 import api from "../../api/client";
 import { useNavigation } from "@react-navigation/native";
+import { UserContext } from "../../context/UserContext";
 
 export default function AuthScreen() {
   const [name, setName] = useState("");
@@ -10,16 +12,26 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(false);
   const nav = useNavigation<any>();
+  const ctx = useContext(UserContext);
+
+  const persistSession = async (token: string, profile: any) => {
+    await AsyncStorage.setItem("kpr_token", token);
+
+    (globalThis as any).__KPR_TOKEN = token;
+    (globalThis as any).__KPR_USER = profile;
+    const identifier = profile?._id || profile?.id;
+    (globalThis as any).__KPR_USER_ID = identifier;
+    (globalThis as any).__KPR_USER_NAME = profile?.name;
+
+    ctx?.setUser(profile);
+    nav.reset({ index: 0, routes: [{ name: "TempleHall" }] });
+  };
 
   const register = async () => {
     try {
       const res = await api.post("/auth/register", { name, email, password });
       if (res.data?.token) {
-        (globalThis as any).__KPR_TOKEN = res.data.token;
-        (globalThis as any).__KPR_USER = res.data.user;
-        (globalThis as any).__KPR_USER_ID = res.data.user?.id;
-        (globalThis as any).__KPR_USER_NAME = res.data.user?.name;
-        nav.navigate("TempleHall");
+        await persistSession(res.data.token, res.data.user);
       }
     } catch (err: any) {
       Alert.alert("Error", err?.response?.data?.message || "Server error");
@@ -30,11 +42,7 @@ export default function AuthScreen() {
     try {
       const res = await api.post("/auth/login", { email, password });
       if (res.data?.token) {
-        (globalThis as any).__KPR_TOKEN = res.data.token;
-        (globalThis as any).__KPR_USER = res.data.user;
-        (globalThis as any).__KPR_USER_ID = res.data.user?.id;
-        (globalThis as any).__KPR_USER_NAME = res.data.user?.name;
-        nav.navigate("TempleHall");
+        await persistSession(res.data.token, res.data.user);
       }
     } catch (err: any) {
       Alert.alert("Error", err?.response?.data?.message || "Server error");
