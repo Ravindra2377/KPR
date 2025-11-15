@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert
 } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { io, Socket } from "socket.io-client";
 import api, { BASE_URL } from "../../api/client";
@@ -105,15 +106,27 @@ export default function RoomChat() {
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
-    const isMine = currentUser?.id && item.author === currentUser.id;
+    const isMine =
+      item.authorName === (globalThis as any).__KPR_USER_NAME ||
+      (currentUser?.id && item.author === currentUser.id) ||
+      item.authorName === "You";
+
     return (
-      <View style={[styles.bubbleRow, isMine ? styles.bubbleRowRight : styles.bubbleRowLeft]}>
-        <View style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleOther]}>
-          {!isMine && <Text style={styles.author}>{item.authorName}</Text>}
-          <Text style={styles.content}>{item.content}</Text>
-          <Text style={styles.timestamp}>{new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
+      <Animated.View
+        entering={FadeIn.springify().damping(12)}
+        style={[styles.msgRow, isMine ? styles.msgRight : styles.msgLeft]}
+      >
+        {!isMine && <Text style={styles.msgSender}>{item.authorName || "Anon"}</Text>}
+
+        <View style={[styles.msgBubble, isMine ? styles.bubbleMe : styles.bubbleOther]}>
+          <Text style={styles.msgText}>{item.content}</Text>
+          <Text style={styles.msgTime}>
+            {item.createdAt
+              ? new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+              : ""}
+          </Text>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
@@ -126,7 +139,7 @@ export default function RoomChat() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.wrapper} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => nav.goBack()}>
           <Text style={styles.back}>{"←"}</Text>
@@ -139,12 +152,12 @@ export default function RoomChat() {
       <FlatList
         ref={flatListRef}
         data={messages}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, idx) => item._id || `${idx}`}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<Text style={styles.empty}>No messages yet. Say hi!</Text>}
       />
-      <View style={styles.composerRow}>
+      <View style={styles.composer}>
         <TextInput
           style={styles.input}
           placeholder="Send a vibe"
@@ -154,7 +167,7 @@ export default function RoomChat() {
           onSubmitEditing={sendMessage}
           returnKeyType="send"
         />
-        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+        <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
           <Text style={styles.sendText}>Send</Text>
         </TouchableOpacity>
       </View>
@@ -163,26 +176,91 @@ export default function RoomChat() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.panel },
+  header: {
+    paddingTop: 14,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#131318",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    flexDirection: "row"
+  },
   back: { color: colors.accentSecondary, fontSize: 24, marginRight: 12 },
   headerTextBlock: { flex: 1 },
-  headerTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "600" },
+  headerTitle: { color: colors.accentPrimary, fontSize: 18, fontWeight: "700" },
   headerSubtitle: { color: colors.textSecondary, marginTop: 2 },
-  listContent: { padding: 16, paddingBottom: 100 },
-  bubbleRow: { flexDirection: "row", marginBottom: 12 },
-  bubbleRowRight: { justifyContent: "flex-end" },
-  bubbleRowLeft: { justifyContent: "flex-start" },
-  bubble: { maxWidth: "80%", borderRadius: 16, padding: 12 },
-  bubbleMine: { backgroundColor: colors.accentSecondary, borderBottomRightRadius: 2 },
-  bubbleOther: { backgroundColor: colors.surface, borderBottomLeftRadius: 2 },
-  author: { color: colors.textSecondary, fontSize: 12, marginBottom: 4 },
-  content: { color: colors.textPrimary, fontSize: 16 },
-  timestamp: { color: colors.textSecondary, fontSize: 11, marginTop: 6, textAlign: "right" },
+  listContent: { padding: 16, paddingBottom: 120 },
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 24 },
-  composerRow: { flexDirection: "row", alignItems: "center", padding: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.panel, backgroundColor: colors.surface },
-  input: { flex: 1, backgroundColor: colors.background, color: colors.textPrimary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, marginRight: 10 },
-  sendButton: { backgroundColor: colors.accentPrimary, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12 },
-  sendText: { color: colors.textPrimary, fontWeight: "600" }
+  composer: {
+    flexDirection: "row",
+    padding: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#111",
+    alignItems: "flex-end",
+    backgroundColor: colors.surface
+  },
+  input: {
+    flex: 1,
+    backgroundColor: "#17161D",
+    color: colors.textPrimary,
+    padding: 12,
+    borderRadius: 14,
+    marginRight: 10,
+    maxHeight: 120,
+    fontSize: 15
+  },
+  sendBtn: {
+    backgroundColor: colors.accentSecondary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12
+  },
+  sendText: { color: colors.textPrimary, fontWeight: "700" },
+  msgRow: {
+    marginBottom: 14,
+    maxWidth: "90%"
+  },
+  msgLeft: {
+    alignSelf: "flex-start",
+    marginLeft: 6
+  },
+  msgRight: {
+    alignSelf: "flex-end",
+    marginRight: 6
+  },
+  msgBubble: {
+    padding: 12,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3
+  },
+  bubbleOther: {
+    backgroundColor: "#241A36",
+    borderBottomLeftRadius: 4
+  },
+  bubbleMe: {
+    backgroundColor: colors.accentSecondary,
+    borderBottomRightRadius: 4
+  },
+  msgText: {
+    color: colors.textPrimary,
+    fontSize: 15
+  },
+  msgSender: {
+    color: "#AAA",
+    marginBottom: 4,
+    marginLeft: 4,
+    fontSize: 12
+  },
+  msgTime: {
+    color: "#C8C3D8",
+    fontSize: 10,
+    marginTop: 6,
+    alignSelf: "flex-end"
+  }
 });

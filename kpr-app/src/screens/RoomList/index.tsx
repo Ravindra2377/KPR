@@ -50,16 +50,18 @@ export default function RoomList() {
         keyExtractor={(item) => item._id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchRooms(); }} />}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => nav.navigate("RoomChat", { room: item })}
-          >
-            <View style={styles.cardRow}>
-              <Text style={styles.title}>{item.name}</Text>
-              {item.type && <Text style={styles.type}>{item.type}</Text>}
+          <TouchableOpacity style={styles.card} onPress={() => nav.navigate("RoomChat", { room: item })}>
+            <View style={styles.cardLeft}>
+              <Text style={styles.cardTitle}>{item.name}</Text>
+              {item.description ? (
+                <Text numberOfLines={1} style={styles.cardDesc}>
+                  {item.description}
+                </Text>
+              ) : null}
             </View>
-            {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
-            <Text style={styles.enter}>Enter room →</Text>
+            <View style={styles.cardArrow}>
+              <Text style={{ color: colors.accentPrimary }}>→</Text>
+            </View>
           </TouchableOpacity>
         )}
         ListEmptyComponent={<Text style={styles.empty}>No rooms yet. Create one from the backend to test.</Text>}
@@ -73,11 +75,32 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background },
   header: { color: colors.accentPrimary, fontSize: 24, fontWeight: "700" },
   subheader: { color: colors.textSecondary, marginTop: 6, marginBottom: 14 },
-  card: { backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 12 },
-  cardRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { color: colors.textPrimary, fontSize: 18, fontWeight: "600" },
-  type: { color: colors.textSecondary, textTransform: "uppercase", fontSize: 12 },
-  description: { color: colors.textSecondary, marginTop: 8 },
-  enter: { color: colors.accentSecondary, marginTop: 10, fontWeight: "600" },
+  card: {
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2
+  },
+  cardLeft: { flexDirection: "column", flex: 1 },
+  cardTitle: {
+    color: colors.textPrimary,
+    fontSize: 17,
+    fontWeight: "600"
+  },
+  cardDesc: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginTop: 4
+  },
+  cardArrow: {
+    paddingHorizontal: 8
+  },
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 40 }
 });

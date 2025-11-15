@@ -10,17 +10,25 @@ export default function TempleHall() {
       <Text style={styles.title}>KPR</Text>
       <Text style={styles.subtitle}>Your Creative Sanctuary</Text>
 
-      <TouchableOpacity style={styles.button} onPress={() => nav.navigate("IdeaList")}>
-        <Text style={styles.buttonText}>Explore Ideas</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonGroup}>
+        <TouchableOpacity style={[styles.button, styles.primaryButton]} onPress={() => nav.navigate("IdeaList")}>
+          <Text style={styles.buttonText}>Explore Ideas</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => nav.navigate("IdeaComposer")}>
-        <Text style={styles.secondaryButtonText}>Create New Idea</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.panelButton, styles.buttonGap]}
+          onPress={() => nav.navigate("IdeaComposer")}
+        >
+          <Text style={styles.buttonSecondary}>Create Idea</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.secondaryButton, styles.roomsButton]} onPress={() => nav.navigate("RoomList")}>
-        <Text style={styles.secondaryButtonText}>Join Creative Rooms</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.panelButton, styles.buttonGap]}
+          onPress={() => nav.navigate("RoomList")}
+        >
+          <Text style={styles.buttonSecondary}>Creative Rooms</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -29,27 +37,23 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: 24 },
   title: { color: colors.accentPrimary, fontSize: 40, fontWeight: "700", marginTop: 40 },
   subtitle: { color: colors.textSecondary, fontSize: 16, marginTop: 12 },
+  buttonGroup: { marginTop: 40 },
   button: {
-    marginTop: 28,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    backgroundColor: colors.accentSecondary,
-    alignSelf: "flex-start"
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: "center"
   },
-  buttonText: { color: colors.textPrimary, fontWeight: "600" },
-  secondaryButton: {
-    marginTop: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    backgroundColor: colors.panel,
-    alignSelf: "flex-start"
+  buttonGap: { marginTop: 16 },
+  primaryButton: { backgroundColor: colors.accentSecondary },
+  panelButton: { backgroundColor: colors.panel },
+  buttonText: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "700"
   },
-  roomsButton: {
-    backgroundColor: colors.surface,
-    borderColor: colors.panel,
-    borderWidth: StyleSheet.hairlineWidth
-  },
-  secondaryButtonText: { color: colors.textSecondary }
+  buttonSecondary: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: "500"
+  }
 });

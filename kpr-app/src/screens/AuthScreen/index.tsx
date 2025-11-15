@@ -17,6 +17,8 @@ export default function AuthScreen() {
       if (res.data?.token) {
         (globalThis as any).__KPR_TOKEN = res.data.token;
         (globalThis as any).__KPR_USER = res.data.user;
+        (globalThis as any).__KPR_USER_ID = res.data.user?.id;
+        (globalThis as any).__KPR_USER_NAME = res.data.user?.name;
         nav.navigate("TempleHall");
       }
     } catch (err: any) {
@@ -30,6 +32,8 @@ export default function AuthScreen() {
       if (res.data?.token) {
         (globalThis as any).__KPR_TOKEN = res.data.token;
         (globalThis as any).__KPR_USER = res.data.user;
+        (globalThis as any).__KPR_USER_ID = res.data.user?.id;
+        (globalThis as any).__KPR_USER_NAME = res.data.user?.name;
         nav.navigate("TempleHall");
       }
     } catch (err: any) {
