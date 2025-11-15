@@ -14,8 +14,8 @@ export default function TempleHall() {
         <Text style={styles.buttonText}>Explore Ideas</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => {}}>
-        <Text style={styles.secondaryButtonText}>Create New Idea (coming soon)</Text>
+      <TouchableOpacity style={styles.secondaryButton} onPress={() => nav.navigate("IdeaComposer")}>
+        <Text style={styles.secondaryButtonText}>Create New Idea</Text>
       </TouchableOpacity>
     </View>
   );
