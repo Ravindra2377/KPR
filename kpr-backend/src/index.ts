@@ -10,6 +10,7 @@ import roomRoutes from "./routes/rooms";
 import userRoutes from "./routes/user";
 import oracleRoutes from "./routes/oracle";
 import RoomMessage from "./models/RoomMessage";
+import podRoutes from "./routes/pods";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/ideas", ideaRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/pods", podRoutes);
 app.use("/api/oracle", oracleRoutes);
 
 app.get("/", (_req, res) => res.send("KPR Backend Running"));
@@ -64,6 +66,17 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
+  });
+
+  socket.on("joinPod", ({ podId, userId }) => {
+    if (!podId) return;
+    socket.join(`pod_${podId}`);
+    socket.to(`pod_${podId}`).emit("podUserJoined", { podId, userId });
+  });
+
+  socket.on("podTaskUpdated", (payload) => {
+    if (!payload?.podId) return;
+    io.to(`pod_${payload.podId}`).emit("podTaskUpdated", payload);
   });
 });
 

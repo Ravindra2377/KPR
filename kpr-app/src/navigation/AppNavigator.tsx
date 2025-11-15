@@ -11,6 +11,8 @@ import RoomChat from "../screens/RoomChat";
 import Oracle from "../screens/Oracle";
 import Profile from "../screens/Profile";
 import EditProfile from "../screens/EditProfile";
+import PodList from "../screens/Pods/PodList";
+import PodDetail from "../screens/Pods/PodDetail";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -21,6 +23,8 @@ export type RootStackParamList = {
   RoomList: undefined;
   RoomChat: { room: Room };
   Oracle: { ideaText?: string } | undefined;
+  PodList: undefined;
+  PodDetail: { id: string; name: string };
   Profile: undefined;
   EditProfile: undefined;
 };
@@ -39,6 +43,8 @@ export default function AppNavigator() {
         <Stack.Screen name="RoomList" component={RoomList} />
         <Stack.Screen name="RoomChat" component={RoomChat} />
   <Stack.Screen name="Oracle" component={Oracle} />
+  <Stack.Screen name="PodList" component={PodList} />
+  <Stack.Screen name="PodDetail" component={PodDetail} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="EditProfile" component={EditProfile} />
       </Stack.Navigator>
