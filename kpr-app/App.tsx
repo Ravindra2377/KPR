@@ -10,14 +10,17 @@ import {SafeAreaView, StatusBar, StyleSheet} from 'react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import {colors} from './src/theme/colors';
 import {UserProvider} from './src/context/UserContext';
+import {NotificationProvider} from './src/context/NotificationContext';
 
 function App(): React.JSX.Element {
   return (
     <UserProvider>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-      <SafeAreaView style={styles.container}>
-        <AppNavigator />
-      </SafeAreaView>
+      <NotificationProvider>
+        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        <SafeAreaView style={styles.container}>
+          <AppNavigator />
+        </SafeAreaView>
+      </NotificationProvider>
     </UserProvider>
   );
 }

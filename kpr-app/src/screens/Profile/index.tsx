@@ -21,6 +21,7 @@ export default function Profile() {
 
   const logout = async () => {
     await AsyncStorage.removeItem("kpr_token");
+    await AsyncStorage.removeItem("kpr_user_id");
     globalThis.__KPR_TOKEN = undefined;
   globalThis.__KPR_USER = undefined;
     globalThis.__KPR_USER_ID = undefined;

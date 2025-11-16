@@ -27,6 +27,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       globalThis.__KPR_USER_ID = res.data._id;
       globalThis.__KPR_USER_NAME = res.data.name;
       globalThis.__KPR_TOKEN = token;
+      if (res.data._id) {
+        await AsyncStorage.setItem("kpr_user_id", res.data._id.toString());
+      }
     } catch (err) {
       console.warn("User load error:", err);
     }

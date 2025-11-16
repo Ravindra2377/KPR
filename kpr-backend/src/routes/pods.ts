@@ -1,6 +1,7 @@
 import express from "express";
 import Pod from "../models/Pod";
 import { requireAuth, AuthRequest } from "../middleware/auth";
+import User from "../models/User";
 
 const router = express.Router();
 
@@ -118,6 +119,21 @@ router.post("/:id/tasks", requireAuth, async (req: AuthRequest, res) => {
     const populated = await Pod.findById(pod._id)
       .populate("tasks.assignee", "name")
       .populate("members", "name");
+
+    const assigneeId = assignee ? String(assignee) : null;
+    if (assigneeId && assigneeId !== requesterId) {
+      const Notification = (await import("../models/Notification")).default;
+      const actor = await User.findById(requesterId).select("name");
+      const notif = await Notification.create({
+        user: assigneeId,
+        type: "task_assigned",
+        message: `${actor?.name || "Someone"} assigned you a task "${title.trim()}" in pod "${pod.name}"`,
+        meta: { podId: pod._id }
+      });
+      const { emitNotificationToUser } = await import("../utils/notifications-emitter");
+      emitNotificationToUser(assigneeId, notif);
+    }
+
     res.status(201).json(populated);
   } catch (err) {
     res.status(500).json({ message: "Server error", err });
@@ -138,6 +154,7 @@ router.patch("/:id/tasks/:taskId", requireAuth, async (req: AuthRequest, res) =>
     const t = (pod.tasks as any).id(req.params.taskId);
     if (!t) return res.status(404).json({ message: "Task not found" });
 
+    const previousAssignee = t.assignee ? String(t.assignee) : null;
     if (title !== undefined) t.title = title;
     if (description !== undefined) t.description = description;
     if (status !== undefined) t.status = status;
@@ -147,6 +164,21 @@ router.patch("/:id/tasks/:taskId", requireAuth, async (req: AuthRequest, res) =>
     const populated = await Pod.findById(pod._id)
       .populate("tasks.assignee", "name")
       .populate("members", "name");
+
+    const nextAssignee = assignee !== undefined ? (assignee ? String(assignee) : null) : previousAssignee;
+    if (assignee !== undefined && nextAssignee && nextAssignee !== requesterId && nextAssignee !== previousAssignee) {
+      const Notification = (await import("../models/Notification")).default;
+      const actor = await User.findById(requesterId).select("name");
+      const notif = await Notification.create({
+        user: nextAssignee,
+        type: "task_assigned",
+        message: `${actor?.name || "Someone"} assigned you a task "${t.title}" in pod "${pod.name}"`,
+        meta: { podId: pod._id }
+      });
+      const { emitNotificationToUser } = await import("../utils/notifications-emitter");
+      emitNotificationToUser(nextAssignee, notif);
+    }
+
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: "Server error", err });

@@ -49,15 +49,39 @@ router.get("/:id", async (req, res) => {
   res.json(idea);
 });
 
-// Appreciate idea (existing)
-router.post("/:id/appreciate", requireAuth, async (req, res) => {
-  const idea = await Idea.findById(req.params.id);
-  if (!idea) return res.status(404).json({ message: "Not found" });
+// Appreciate idea and notify author
+router.post("/:id/appreciate", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const idea = await Idea.findById(req.params.id).populate("author", "name");
+    if (!idea) return res.status(404).json({ message: "Idea not found" });
 
-  idea.appreciationCount++;
-  await idea.save();
+    idea.appreciationCount = (idea.appreciationCount || 0) + 1;
+    await idea.save();
 
-  res.json({ appreciationCount: idea.appreciationCount });
+    const authorId = (idea.author as any)?._id?.toString();
+    if (authorId && authorId !== req.userId) {
+      const Notification = (await import("../models/Notification")).default;
+      const actor = await User.findById(req.userId).select("name");
+
+      const notif = await Notification.create({
+        user: authorId,
+        type: "idea_appreciation",
+        message: `${actor?.name || "Someone"} appreciated your idea "${idea.title}"`,
+        meta: { ideaId: idea._id }
+      });
+
+      try {
+        const { emitNotificationToUser } = await import("../utils/notifications-emitter");
+        emitNotificationToUser(authorId, notif);
+      } catch (e) {
+        console.warn("emit notification error", e);
+      }
+    }
+
+    res.json({ appreciationCount: idea.appreciationCount });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", err });
+  }
 });
 
 export default router;

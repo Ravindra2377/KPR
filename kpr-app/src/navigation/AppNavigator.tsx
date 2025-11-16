@@ -13,6 +13,7 @@ import Profile from "../screens/Profile";
 import EditProfile from "../screens/EditProfile";
 import PodList from "../screens/Pods/PodList";
 import PodDetail from "../screens/Pods/PodDetail";
+import NotificationsScreen from "../screens/Notifications";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -25,6 +26,7 @@ export type RootStackParamList = {
   Oracle: { ideaText?: string } | undefined;
   PodList: undefined;
   PodDetail: { id: string; name: string };
+  Notifications: undefined;
   Profile: undefined;
   EditProfile: undefined;
 };
@@ -45,6 +47,7 @@ export default function AppNavigator() {
   <Stack.Screen name="Oracle" component={Oracle} />
   <Stack.Screen name="PodList" component={PodList} />
   <Stack.Screen name="PodDetail" component={PodDetail} />
+  <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="EditProfile" component={EditProfile} />
       </Stack.Navigator>

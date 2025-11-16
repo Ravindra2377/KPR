@@ -1,0 +1,7 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./kpr-app/tsconfig.json" },
+    { "path": "./kpr-backend/tsconfig.json" }
+  ]
+}

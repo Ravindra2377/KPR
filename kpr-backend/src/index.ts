@@ -11,12 +11,15 @@ import userRoutes from "./routes/user";
 import oracleRoutes from "./routes/oracle";
 import RoomMessage from "./models/RoomMessage";
 import podRoutes from "./routes/pods";
+import notificationRoutes from "./routes/notifications";
+import { initNotificationEmitter, registerUserSocket, unregisterUserSocket } from "./utils/notifications-emitter";
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+initNotificationEmitter(io);
 
 app.use(cors());
 app.use(express.json());
@@ -27,11 +30,20 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/pods", podRoutes);
 app.use("/api/oracle", oracleRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (_req, res) => res.send("KPR Backend Running"));
 
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
+
+  socket.on("identify", ({ userId }: { userId?: string }) => {
+    if (userId) {
+      socket.data.userId = userId;
+      registerUserSocket(userId, socket.id);
+      console.log(`Registered socket ${socket.id} for user ${userId}`);
+    }
+  });
 
   socket.on("joinRoom", ({ roomId, userId }) => {
     socket.join(roomId);
@@ -64,10 +76,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id);
-  });
-
   socket.on("joinPod", ({ podId, userId }) => {
     if (!podId) return;
     socket.join(`pod_${podId}`);
@@ -77,6 +85,12 @@ io.on("connection", (socket) => {
   socket.on("podTaskUpdated", (payload) => {
     if (!payload?.podId) return;
     io.to(`pod_${payload.podId}`).emit("podTaskUpdated", payload);
+  });
+
+  socket.on("disconnect", () => {
+    const uid = (socket as any).data?.userId;
+    if (uid) unregisterUserSocket(uid, socket.id);
+    console.log("Socket disconnected:", socket.id);
   });
 });
 

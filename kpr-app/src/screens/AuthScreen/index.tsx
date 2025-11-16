@@ -22,6 +22,9 @@ export default function AuthScreen() {
     const identifier = profile?._id || profile?.id;
     (globalThis as any).__KPR_USER_ID = identifier;
     (globalThis as any).__KPR_USER_NAME = profile?.name;
+    if (identifier) {
+      await AsyncStorage.setItem("kpr_user_id", identifier);
+    }
 
     ctx?.setUser(profile);
     nav.reset({ index: 0, routes: [{ name: "TempleHall" }] });
