@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Alert
 } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { io, Socket } from "socket.io-client";
 import api, { BASE_URL } from "../../api/client";
@@ -40,9 +40,26 @@ export default function RoomChat() {
   const [typingUsers, setTypingUsers] = useState<Record<string, string>>({});
   const flatListRef = useRef<FlatList<Message>>(null);
   const socketRef = useRef<Socket | null>(null);
+  const typingOpacity = useSharedValue(0);
+  const typingStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(typingOpacity.value, { duration: 220 })
+  }));
 
   const currentUser = (globalThis as any).__KPR_USER;
   const token = (globalThis as any).__KPR_TOKEN;
+
+  const typingCount = useMemo(() => Object.keys(typingUsers).length, [typingUsers]);
+  const typingMessage = useMemo(() => {
+    if (typingCount === 0) return "";
+    const activeNames = Object.values(typingUsers);
+    return typingCount === 1
+      ? `${activeNames[0]} is typing...`
+      : `${typingCount} creators typing...`;
+  }, [typingCount, typingUsers]);
+
+  useEffect(() => {
+    typingOpacity.value = typingCount > 0 ? 1 : 0;
+  }, [typingCount, typingOpacity]);
 
   const scrollToEnd = () => {
     requestAnimationFrame(() => {
@@ -76,7 +93,7 @@ export default function RoomChat() {
   useEffect(() => {
     const socket = io(BASE_URL, { transports: ["websocket"], forceNew: true });
     socketRef.current = socket;
-  socket.emit("joinRoom", { roomId: room._id, userId: currentUser?.id || "guest" });
+    socket.emit("joinRoom", { roomId: room._id, userId: currentUser?.id || "guest" });
 
     socket.on("roomMessage", (payload: Message) => {
       if (payload.roomId !== room._id) return;
@@ -102,8 +119,9 @@ export default function RoomChat() {
       socket.removeAllListeners("userTyping");
       socket.disconnect();
       setTypingUsers({});
+      typingOpacity.value = 0;
     };
-  }, [room._id, currentUser?.id]);
+  }, [room._id, currentUser?.id, typingOpacity]);
 
   const emitTyping = useCallback(
     (isTyping: boolean) => {
@@ -201,15 +219,9 @@ export default function RoomChat() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<Text style={styles.empty}>No messages yet. Say hi!</Text>}
       />
-      {Object.keys(typingUsers).length > 0 && (
-        <View style={styles.typing}>
-          <Text style={styles.typingText}>
-            {Object.keys(typingUsers).length === 1
-              ? `${Object.values(typingUsers)[0]} is typing...`
-              : `${Object.keys(typingUsers).length} creators typing...`}
-          </Text>
-        </View>
-      )}
+      <Animated.View style={[styles.typingWrapper, typingStyle]} pointerEvents="none">
+        {typingCount > 0 && <Text style={styles.typingText}>{typingMessage}</Text>}
+      </Animated.View>
       <View style={styles.composer}>
         <TextInput
           style={styles.input}
@@ -255,7 +267,9 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     backgroundColor: colors.surface
   },
-  typing: {
+  typingWrapper: {
+    minHeight: 20,
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingBottom: 6
   },
