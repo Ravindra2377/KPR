@@ -13,12 +13,22 @@ import IdeaDetail from "../screens/IdeaDetail";
 import IdeaComposer from "../screens/IdeaComposer";
 import RoomList, { Room } from "../screens/RoomList";
 import RoomChat from "../screens/RoomChat";
+import DMChat from "../screens/DMChat";
+import DMInbox from "../screens/DMInbox";
 import Oracle from "../screens/Oracle";
 import Profile from "../screens/Profile";
 import EditProfile from "../screens/EditProfile";
-import PodList from "../screens/Pods/PodList";
+import PodsDiscoverWithSwitcher from "../screens/Pods/PodsDiscoverWithSwitcher";
+import PodsIndex from "../screens/Pods/PodsIndex";
 import PodDetail from "../screens/Pods/PodDetail";
-import NotificationsScreen from "../screens/Notifications";
+import NotificationsCenter from "../screens/Notifications/NotificationsCenter";
+import RequestsInbox from "../screens/Collab/RequestsInbox";
+import CollaboratorsList from "../screens/Collab/CollaboratorsList";
+import CollabHistory from "../screens/Collab/CollabHistory";
+import DiscoverScreen from "../screens/Discover/DiscoverScreen";
+import UserProfileView from "../screens/Discover/UserProfileView";
+import type { DiscoverUser } from "../types/discover";
+import HuddleCall from "../screens/Huddle/HuddleCall";
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -33,12 +43,21 @@ export type RootStackParamList = {
   IdeaComposer: undefined;
   RoomList: undefined;
   RoomChat: { room: Room };
+  DMChat: { room: Room; partner?: { _id: string; name?: string; avatar?: string; bio?: string; skills?: string[] } };
+  DMInbox: undefined;
   Oracle: { ideaText?: string } | undefined;
-  PodList: undefined;
-  PodDetail: { id: string; name: string };
-  Notifications: undefined;
+  PodsDiscover: undefined;
+  PodsIndex: { view?: "grid" | "list" | "hybrid" } | undefined;
+  PodDetail: { podId?: string; id?: string; name?: string };
+  NotificationsCenter: undefined;
   Profile: undefined;
   EditProfile: undefined;
+  Discover: undefined;
+  UserProfileView: { user: DiscoverUser };
+  RequestsInbox: undefined;
+  CollaboratorsList: { userId: string; userName: string };
+  CollabHistory: { userId: string };
+  HuddleCall: { url: string; title?: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -63,12 +82,21 @@ export default function AppNavigator({ navigationRef }: Props) {
         <Stack.Screen name="IdeaComposer" component={IdeaComposer} />
         <Stack.Screen name="RoomList" component={RoomList} />
         <Stack.Screen name="RoomChat" component={RoomChat} />
+        <Stack.Screen name="DMChat" component={DMChat} />
+        <Stack.Screen name="DMInbox" component={DMInbox} />
         <Stack.Screen name="Oracle" component={Oracle} />
-        <Stack.Screen name="PodList" component={PodList} />
+        <Stack.Screen name="PodsDiscover" component={PodsDiscoverWithSwitcher} />
+        <Stack.Screen name="PodsIndex" component={PodsIndex} />
         <Stack.Screen name="PodDetail" component={PodDetail} />
-        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="NotificationsCenter" component={NotificationsCenter} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="EditProfile" component={EditProfile} />
+        <Stack.Screen name="Discover" component={DiscoverScreen} />
+        <Stack.Screen name="UserProfileView" component={UserProfileView} />
+        <Stack.Screen name="RequestsInbox" component={RequestsInbox} />
+        <Stack.Screen name="CollaboratorsList" component={CollaboratorsList} />
+        <Stack.Screen name="CollabHistory" component={CollabHistory} />
+        <Stack.Screen name="HuddleCall" component={HuddleCall} />
       </Stack.Navigator>
     </NavigationContainer>
   );

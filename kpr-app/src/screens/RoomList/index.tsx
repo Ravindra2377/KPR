@@ -9,6 +9,8 @@ export type Room = {
   name: string;
   description?: string;
   type?: string;
+  isDM?: boolean;
+  members?: string[];
 };
 
 export default function RoomList() {

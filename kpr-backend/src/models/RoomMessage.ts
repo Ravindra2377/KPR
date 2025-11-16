@@ -5,6 +5,7 @@ export interface IRoomMessage extends Document {
   author: mongoose.Types.ObjectId;
   authorName: string;
   content: string;
+  readBy: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,7 +15,8 @@ const RoomMessageSchema: Schema<IRoomMessage> = new Schema(
     room: { type: Schema.Types.ObjectId, ref: "Room", required: true },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     authorName: { type: String, required: true },
-    content: { type: String, required: true, maxlength: 1000 }
+    content: { type: String, required: true, maxlength: 1000 },
+    readBy: [{ type: Schema.Types.ObjectId, ref: "User", default: [] }]
   },
   { timestamps: true }
 );

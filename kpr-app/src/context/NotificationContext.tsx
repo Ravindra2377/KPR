@@ -6,6 +6,7 @@ import api, { BASE_URL } from "../api/client";
 interface NotificationValue {
   notifications: any[];
   unreadCount: number;
+  load: () => Promise<void>;
   reload: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
@@ -14,6 +15,7 @@ interface NotificationValue {
 export const NotificationContext = createContext<NotificationValue>({
   notifications: [],
   unreadCount: 0,
+  load: async () => {},
   reload: async () => {},
   markRead: async () => {},
   markAllRead: async () => {}
@@ -102,7 +104,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, reload: loadNotifications, markRead, markAllRead }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, load: loadNotifications, reload: loadNotifications, markRead, markAllRead }}>
       {children}
     </NotificationContext.Provider>
   );

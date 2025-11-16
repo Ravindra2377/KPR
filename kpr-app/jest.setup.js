@@ -118,3 +118,22 @@ jest.mock("react-native-reanimated", () => {
 
   return Reanimated;
 });
+
+jest.mock("react-native-jitsi-meet", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  const mock = {
+    call: jest.fn(),
+    audioCall: jest.fn(),
+    endCall: jest.fn()
+  };
+  const JitsiMeetView = (props) => React.createElement(View, props, props.children);
+  return {
+    __esModule: true,
+    default: mock,
+    JitsiMeetView,
+    call: mock.call,
+    audioCall: mock.audioCall,
+    endCall: mock.endCall
+  };
+});

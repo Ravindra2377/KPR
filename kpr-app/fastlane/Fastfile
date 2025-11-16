@@ -1,0 +1,37 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build and optionally upload the release AAB"
+  lane :release do |options|
+    upload_to_play = options[:upload_to_play] || false
+    keystore_base64 = ENV["KPR_KEYSTORE_BASE64"]
+    raise "KPR_KEYSTORE_BASE64 not set" if keystore_base64.to_s.empty?
+
+    require "base64"
+
+    sh("mkdir -p keystores")
+    File.open("keystores/kpr-release-key.jks", "wb") do |f|
+      f.write(Base64.decode64(keystore_base64))
+    end
+
+    ENV["KPR_STORE_FILE"] = "keystores/kpr-release-key.jks"
+    ENV["KPR_STORE_PASSWORD"] = ENV["KPR_STORE_PASSWORD"]
+    ENV["KPR_KEY_ALIAS"] = ENV["KPR_KEY_ALIAS"]
+    ENV["KPR_KEY_PASSWORD"] = ENV["KPR_KEY_PASSWORD"]
+
+    gradle(task: "clean bundleRelease")
+
+    aab_path = "android/app/build/outputs/bundle/release/app-release.aab"
+    UI.user_error!("AAB not found: #{aab_path}") unless File.exist?(aab_path)
+
+    if upload_to_play
+      supply(
+        aab: aab_path,
+        track: "internal",
+        json_key: ENV["PLAY_STORE_JSON_PATH"] || "fastlane/google_play_service_account.json"
+      )
+    else
+      UI.message("Built AAB at #{aab_path}")
+    end
+  end
+end

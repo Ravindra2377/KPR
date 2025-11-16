@@ -8,3 +8,15 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+-keep class com.facebook.react.** { *; }
+-keep class com.facebook.hermes.** { *; }
+-keep class com.facebook.jni.** { *; }
+-keep class com.facebook.soloader.** { *; }
+-keepclassmembers class * {
+	@com.facebook.react.bridge.ReactMethod <methods>;
+}
+-keepattributes *Annotation*
+
+# Keep Jitsi/HMS classes when bundling native video/audio libraries
+-keep class org.jitsi.** { *; }

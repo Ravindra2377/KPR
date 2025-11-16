@@ -3,6 +3,6 @@ module.exports = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   transformIgnorePatterns: [
-    "node_modules/(?!(react-native|@react-native|react-clone-referenced-element|@react-navigation|@react-native-community|react-native-gesture-handler|react-native-reanimated|react-native-worklets|react-native-safe-area-context|react-native-screens|react-native-linear-gradient|uuid)/)"
+    "node_modules/(?!(react-native|@react-native|react-clone-referenced-element|@react-navigation|@react-native-community|react-native-gesture-handler|react-native-reanimated|react-native-worklets|react-native-safe-area-context|react-native-screens|react-native-linear-gradient|react-native-shimmer-placeholder|react-native-image-picker|react-native-jitsi-meet|uuid)/)"
   ]
 };

@@ -3,6 +3,7 @@ import http from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path";
 import { connectDB } from "./config/db";
 import authRoutes from "./routes/auth";
 import ideaRoutes from "./routes/ideas";
@@ -10,9 +11,21 @@ import roomRoutes from "./routes/rooms";
 import userRoutes from "./routes/user";
 import oracleRoutes from "./routes/oracle";
 import RoomMessage from "./models/RoomMessage";
+import Room from "./models/Room";
 import podRoutes from "./routes/pods";
 import notificationRoutes from "./routes/notifications";
-import { initNotificationEmitter, registerUserSocket, unregisterUserSocket } from "./utils/notifications-emitter";
+import discoverRoutes from "./routes/discover";
+import collabRoutes from "./routes/collab";
+import messageRoutes from "./routes/messages";
+import {
+  initNotificationEmitter,
+  registerUserSocket,
+  unregisterUserSocket,
+  emitEventToUser,
+  broadcastPresence,
+  getUserConnectionCount
+} from "./utils/notifications-emitter";
+import huddleRoutes from "./routes/huddles";
 
 dotenv.config();
 
@@ -23,6 +36,7 @@ initNotificationEmitter(io);
 
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/ideas", ideaRoutes);
@@ -31,6 +45,10 @@ app.use("/api/users", userRoutes);
 app.use("/api/pods", podRoutes);
 app.use("/api/oracle", oracleRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/discover", discoverRoutes);
+app.use("/api/collab", collabRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/huddles", huddleRoutes);
 
 app.get("/", (_req, res) => res.send("KPR Backend Running"));
 
@@ -42,6 +60,7 @@ io.on("connection", (socket) => {
       socket.data.userId = userId;
       registerUserSocket(userId, socket.id);
       console.log(`Registered socket ${socket.id} for user ${userId}`);
+      broadcastPresence(userId, true);
     }
   });
 
@@ -60,17 +79,31 @@ io.on("connection", (socket) => {
         room: roomId,
         content: safeContent.slice(0, 1000),
         author: userId,
-        authorName
+        authorName,
+        readBy: [userId]
       });
 
-      io.to(roomId).emit("roomMessage", {
+      const messagePayload = {
         _id: message._id,
         roomId,
         content: message.content,
         author: userId,
         authorName,
+        readBy: message.readBy,
         createdAt: message.createdAt
-      });
+      };
+
+      io.to(roomId).emit("roomMessage", messagePayload);
+
+      const parentRoom = await Room.findById(roomId).select("isDM members");
+      if (parentRoom?.isDM) {
+        parentRoom.members.forEach((memberId) => {
+          const id = memberId?.toString?.();
+          if (id) {
+            emitEventToUser(id, "dmListUpdated", { roomId, lastMessage: messagePayload });
+          }
+        });
+      }
     } catch (err) {
       console.error("roomMessage socket error", err);
     }
@@ -93,7 +126,12 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     const uid = (socket as any).data?.userId;
-    if (uid) unregisterUserSocket(uid, socket.id);
+    if (uid) {
+      unregisterUserSocket(uid, socket.id);
+      if (getUserConnectionCount(uid) === 0) {
+        broadcastPresence(uid, false);
+      }
+    }
     console.log("Socket disconnected:", socket.id);
   });
 });

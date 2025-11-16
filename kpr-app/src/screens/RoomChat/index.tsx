@@ -61,6 +61,10 @@ export default function RoomChat() {
     typingOpacity.value = typingCount > 0 ? 1 : 0;
   }, [typingCount, typingOpacity]);
 
+  const handleStartHuddle = () => {
+    Alert.alert("Voice huddle", "We're prepping lightweight voice rooms. Stay tuned!");
+  };
+
   const scrollToEnd = () => {
     requestAnimationFrame(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
@@ -210,6 +214,9 @@ export default function RoomChat() {
           <Text style={styles.headerTitle}>{room.name}</Text>
           {room.description ? <Text style={styles.headerSubtitle}>{room.description}</Text> : null}
         </View>
+        <TouchableOpacity style={styles.huddleBtn} onPress={handleStartHuddle}>
+          <Text style={styles.huddleText}>Voice</Text>
+        </TouchableOpacity>
       </View>
       <FlatList
         ref={flatListRef}
@@ -257,6 +264,13 @@ const styles = StyleSheet.create({
   headerTextBlock: { flex: 1 },
   headerTitle: { color: colors.accentPrimary, fontSize: 18, fontWeight: "700" },
   headerSubtitle: { color: colors.textSecondary, marginTop: 2 },
+  huddleBtn: {
+    backgroundColor: "#2E2038",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12
+  },
+  huddleText: { color: colors.accentSecondary, fontWeight: "700" },
   listContent: { padding: 16, paddingBottom: 120 },
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 24 },
   composer: {

@@ -5,6 +5,7 @@ export interface IRoom extends Document {
   description?: string;
   members: mongoose.Types.ObjectId[];
   type?: string;
+  isDM?: boolean;
 }
 
 const RoomSchema: Schema<IRoom> = new Schema(
@@ -12,7 +13,8 @@ const RoomSchema: Schema<IRoom> = new Schema(
     name: { type: String, required: true },
     description: String,
     members: [{ type: Schema.Types.ObjectId, ref: "User" }],
-    type: { type: String, default: "general" }
+    type: { type: String, default: "general" },
+    isDM: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

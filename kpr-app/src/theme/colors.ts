@@ -1,10 +1,12 @@
 export const colors = {
-  background: "#0D0D0F",
-  surface: "#18181C",
+  background: "#0B0B0D",
+  surface: "#121216",
+  card: "#17171C",
   panel: "#1E1E23",
-  accentPrimary: "#BB86FC",
-  accentSecondary: "#6C31FF",
+  accentPrimary: "#6A00FF",
+  accentSecondary: "#3B007A",
   textPrimary: "#FFFFFF",
-  textSecondary: "#C6C6C8",
-  inputBg: "#121214"
+  textSecondary: "#7C7C85",
+  border: "#2C2237",
+  inputBg: "#111115"
 };
