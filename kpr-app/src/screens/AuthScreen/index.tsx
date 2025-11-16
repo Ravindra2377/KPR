@@ -27,7 +27,8 @@ export default function AuthScreen() {
     }
 
     ctx?.setUser(profile);
-    nav.reset({ index: 0, routes: [{ name: "TempleHall" }] });
+    const hasOnboarded = await AsyncStorage.getItem("kpr_onboard_done");
+    nav.reset({ index: 0, routes: [{ name: hasOnboarded ? "TempleHall" : "Onboard1" }] });
   };
 
   const register = async () => {

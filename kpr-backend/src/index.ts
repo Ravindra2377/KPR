@@ -75,6 +75,10 @@ io.on("connection", (socket) => {
       console.error("roomMessage socket error", err);
     }
   });
+  socket.on("typing", ({ roomId, userId, isTyping, userName }: { roomId?: string; userId?: string; isTyping?: boolean; userName?: string }) => {
+    if (!roomId || !userId) return;
+    socket.to(roomId).emit("userTyping", { roomId, userId, userName, isTyping: Boolean(isTyping) });
+  });
 
   socket.on("joinPod", ({ podId, userId }) => {
     if (!podId) return;

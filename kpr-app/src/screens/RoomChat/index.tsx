@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { io, Socket } from "socket.io-client";
 import api, { BASE_URL } from "../../api/client";
 import { colors } from "../../theme/colors";
 import type { RootStackParamList } from "../../navigation/AppNavigator";
+import debounce from "lodash.debounce";
 
 type RoomChatRoute = RouteProp<RootStackParamList, "RoomChat">;
 
@@ -36,6 +37,7 @@ export default function RoomChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
+  const [typingUsers, setTypingUsers] = useState<Record<string, string>>({});
   const flatListRef = useRef<FlatList<Message>>(null);
   const socketRef = useRef<Socket | null>(null);
 
@@ -82,11 +84,45 @@ export default function RoomChat() {
       scrollToEnd();
     });
 
+    socket.on("userTyping", ({ userId, isTyping, userName }: { userId?: string; isTyping?: boolean; userName?: string }) => {
+      if (!userId || userId === currentUser?.id) return;
+      if (isTyping) {
+        setTypingUsers((prev) => ({ ...prev, [userId]: userName || "Someone" }));
+      } else {
+        setTypingUsers((prev) => {
+          const next = { ...prev };
+          delete next[userId];
+          return next;
+        });
+      }
+    });
+
     return () => {
       socket.removeAllListeners("roomMessage");
+      socket.removeAllListeners("userTyping");
       socket.disconnect();
+      setTypingUsers({});
     };
   }, [room._id, currentUser?.id]);
+
+  const emitTyping = useCallback(
+    (isTyping: boolean) => {
+      const socket = socketRef.current;
+      const userId = currentUser?.id;
+      if (!socket || !userId) return;
+      socket.emit("typing", {
+        roomId: room._id,
+        userId,
+        isTyping,
+        userName: currentUser?.name || "Creator"
+      });
+    },
+    [currentUser?.id, currentUser?.name, room._id]
+  );
+
+  const debouncedStopTyping = useMemo(() => debounce(() => emitTyping(false), 1200), [emitTyping]);
+
+  useEffect(() => () => debouncedStopTyping.cancel(), [debouncedStopTyping]);
 
   const sendMessage = () => {
     if (!socketRef.current) return;
@@ -103,6 +139,14 @@ export default function RoomChat() {
       authorName: currentUser?.name || "Anonymous"
     });
     setInput("");
+    emitTyping(false);
+    debouncedStopTyping.cancel();
+  };
+
+  const handleInputChange = (text: string) => {
+    setInput(text);
+    emitTyping(true);
+    debouncedStopTyping();
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -157,13 +201,22 @@ export default function RoomChat() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<Text style={styles.empty}>No messages yet. Say hi!</Text>}
       />
+      {Object.keys(typingUsers).length > 0 && (
+        <View style={styles.typing}>
+          <Text style={styles.typingText}>
+            {Object.keys(typingUsers).length === 1
+              ? `${Object.values(typingUsers)[0]} is typing...`
+              : `${Object.keys(typingUsers).length} creators typing...`}
+          </Text>
+        </View>
+      )}
       <View style={styles.composer}>
         <TextInput
           style={styles.input}
           placeholder="Send a vibe"
           placeholderTextColor="#777"
           value={input}
-          onChangeText={setInput}
+          onChangeText={handleInputChange}
           onSubmitEditing={sendMessage}
           returnKeyType="send"
         />
@@ -201,6 +254,14 @@ const styles = StyleSheet.create({
     borderTopColor: "#111",
     alignItems: "flex-end",
     backgroundColor: colors.surface
+  },
+  typing: {
+    paddingHorizontal: 16,
+    paddingBottom: 6
+  },
+  typingText: {
+    color: colors.textSecondary,
+    fontSize: 13
   },
   input: {
     flex: 1,
