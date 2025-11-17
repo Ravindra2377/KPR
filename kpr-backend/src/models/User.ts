@@ -3,12 +3,31 @@ import bcrypt from "bcryptjs";
 
 export interface PortfolioItem {
   _id: mongoose.Types.ObjectId;
+  key?: string;
+  url: string;
+  type: "image" | "video";
   title?: string;
   description?: string;
-  mediaUrl: string;
-  mimeType?: string;
   link?: string;
   createdAt: Date;
+  uploadedAt?: Date;
+  meta?: {
+    width?: number;
+    height?: number;
+  };
+  thumbs?: Record<string, string>;
+}
+
+export interface BannerAsset {
+  url: string;
+  key?: string;
+  altText?: string;
+  blurhash?: string | null;
+  meta?: {
+    width?: number;
+    height?: number;
+  };
+  uploadedAt?: Date;
 }
 
 export interface SocialLinks {
@@ -22,6 +41,7 @@ export interface SocialLinks {
   behance?: string;
 }
 
+
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -33,25 +53,14 @@ export interface IUser extends Document {
   lookingFor?: string;
   quote?: string;
   roles?: string[];
-  banner?: string;
+  banner?: BannerAsset | null;
   collaborators?: mongoose.Types.ObjectId[];
   avatar?: string;
   portfolio?: PortfolioItem[];
+  portfolioOrder?: mongoose.Types.ObjectId[];
   social?: SocialLinks;
   comparePassword(candidate: string): Promise<boolean>;
 }
-
-const PortfolioItemSchema = new Schema<PortfolioItem>(
-  {
-    title: String,
-    description: String,
-    mediaUrl: { type: String, required: true },
-    mimeType: String,
-    link: String,
-    createdAt: { type: Date, default: Date.now }
-  },
-  { _id: true }
-);
 
 const SocialSchema = new Schema<SocialLinks>(
   {
@@ -79,10 +88,40 @@ const UserSchema = new Schema<IUser>(
     lookingFor: String,
     quote: String,
     roles: [String],
-    banner: String,
+    banner: {
+      key: String,
+      url: { type: String, default: null },
+      altText: String,
+      blurhash: { type: String, default: null },
+      meta: {
+        width: Number,
+        height: Number
+      },
+      uploadedAt: Date
+    },
     avatar: String,
     collaborators: [{ type: Schema.Types.ObjectId, ref: "User" }],
-    portfolio: [PortfolioItemSchema],
+    portfolio: [
+      new Schema(
+        {
+          key: String,
+          url: { type: String, required: true },
+          type: { type: String, enum: ["image", "video"], default: "image" },
+          title: String,
+          description: String,
+          link: String,
+          createdAt: { type: Date, default: Date.now },
+          uploadedAt: Date,
+          meta: {
+            width: Number,
+            height: Number
+          },
+          thumbs: Schema.Types.Mixed
+        },
+        { _id: true }
+      )
+    ],
+    portfolioOrder: [{ type: Schema.Types.ObjectId }],
     social: SocialSchema
   },
   { timestamps: true }

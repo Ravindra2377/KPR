@@ -107,12 +107,12 @@ export default function Profile() {
     setSelectedItem(match);
   };
 
-  const bannerUrl = profile?.banner ? resolveMedia(profile.banner) : undefined;
+  const bannerUrl = profile?.banner?.url ? resolveMedia(profile.banner.url) : undefined;
   const portfolioItems = useMemo(
     () =>
       (profile?.portfolio || []).map((item) => ({
         id: item._id,
-        url: resolveMedia(item.mediaUrl),
+        url: resolveMedia(item.url),
         title: item.title,
         description: item.description
       })),
@@ -357,7 +357,7 @@ function PortfolioModal({ item, onClose }: { item: PortfolioItem | null; onClose
       <View style={styles.modalBackdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.modalCard}>
-          <Image source={{ uri: resolveMedia(item.mediaUrl) }} style={styles.modalImage} />
+          <Image source={{ uri: resolveMedia(item.url) }} style={styles.modalImage} />
           <View style={styles.modalBodyWrap}>
             <Text style={styles.modalTitle}>{item.title || "Untitled"}</Text>
             {item.createdAt ? (

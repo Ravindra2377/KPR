@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "migrate-local-to-s3": "ts-node scripts/migrate-local-to-s3.ts"
   },
   "keywords": [
     "kpr",
@@ -17,9 +18,12 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+  "mime-types": "^2.1.35",
     "dotenv": "^16.4.0",
     "express": "^4.18.3",
     "fs-extra": "^11.3.2",
@@ -27,7 +31,8 @@
     "mongoose": "^8.0.3",
     "multer": "^2.0.2",
     "openai": "^6.9.0",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "sharp": "^0.32.5"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
@@ -36,6 +41,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/multer": "^2.0.0",
+    "@types/mime-types": "^2.1.0",
     "@types/node": "^20.10.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"

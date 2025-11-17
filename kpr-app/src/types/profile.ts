@@ -11,12 +11,30 @@ export type SocialLinks = {
 
 export type PortfolioItem = {
   _id: string;
+  key?: string;
+  url: string;
+  type: "image" | "video";
   title?: string;
   description?: string;
-  mediaUrl: string;
-  mimeType?: string;
   link?: string;
   createdAt?: string;
+  uploadedAt?: string;
+  meta?: {
+    width?: number;
+    height?: number;
+  };
+  thumbs?: Record<string, string>;
+};
+
+export type BannerAsset = {
+  url: string;
+  key?: string;
+  altText?: string;
+  blurhash?: string | null;
+  meta?: {
+    width?: number;
+    height?: number;
+  };
 };
 
 export type ProfileUser = {
@@ -28,7 +46,7 @@ export type ProfileUser = {
   building?: string;
   lookingFor?: string;
   quote?: string;
-  banner?: string;
+  banner?: BannerAsset | null;
   avatar?: string;
   roles?: string[];
   skills?: string[];

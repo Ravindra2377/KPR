@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,8 @@ import { UserContext } from "../../context/UserContext";
 import api, { BASE_URL } from "../../api/client";
 import { colors } from "../../theme/colors";
 import { PortfolioItem, SocialLinks } from "../../types/profile";
+import { deletePortfolioItem, reorderPortfolio } from "../../api/uploads";
+import { requestPresign, readBlobFromUri, uploadToS3, completeUpload } from "../../api/s3-uploads";
 
 const ROLE_CHOICES = ["Founder", "Designer", "Engineer", "Product", "Artist", "Investor", "Creator", "Strategist"];
 
@@ -40,6 +42,7 @@ export default function EditProfile() {
   const [portfolioDesc, setPortfolioDesc] = useState("");
   const [portfolioLink, setPortfolioLink] = useState("");
   const [portfolioUploading, setPortfolioUploading] = useState(false);
+  const [reorderBusy, setReorderBusy] = useState(false);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>(user?.portfolio || []);
 
   useEffect(() => {
@@ -103,21 +106,15 @@ export default function EditProfile() {
   const pickBanner = async () => {
     try {
       setUploadingBanner(true);
-      const result = await launchImageLibrary({ mediaType: "photo", quality: 0.8, selectionLimit: 1 });
+  const result = await launchImageLibrary({ mediaType: "mixed", quality: 0.8, selectionLimit: 1 });
       const asset = result.assets?.[0];
       if (!asset?.uri) return;
-      const form = new FormData();
-      form.append("file", {
-        // @ts-ignore
-        uri: asset.uri,
-        type: asset.type || "image/jpeg",
-        name: asset.fileName || `banner-${Date.now()}.jpg`
-      });
-      const headers = await authHeaders();
-      await api.post("/profile/banner", form, {
-        ...headers,
-        headers: { ...headers.headers, "Content-Type": "multipart/form-data" }
-      });
+      const fileName = asset.fileName || `banner-${Date.now()}.jpg`;
+      const contentType = asset.type || "image/jpeg";
+      const presign = await requestPresign({ purpose: "banner", fileName, contentType });
+      const blob = await readBlobFromUri(asset.uri);
+      await uploadToS3(presign.url, blob, contentType);
+      await completeUpload("banner", presign.key, { width: asset.width, height: asset.height }, asset.fileName);
       await loadUser?.();
       Alert.alert("Banner updated");
     } catch (err) {
@@ -134,30 +131,23 @@ export default function EditProfile() {
       const result = await launchImageLibrary({ mediaType: "photo", quality: 0.8, selectionLimit: 1 });
       const asset = result.assets?.[0];
       if (!asset?.uri) return;
-      const form = new FormData();
-      form.append("file", {
-        // @ts-ignore
-        uri: asset.uri,
-        type: asset.type || "image/jpeg",
-        name: asset.fileName || `portfolio-${Date.now()}.jpg`
-      });
-      form.append("title", portfolioTitle.trim());
-      form.append("description", portfolioDesc.trim());
-      form.append("link", portfolioLink.trim());
-      const headers = await authHeaders();
-      const { data } = await api.post("/profile/portfolio", form, {
-        ...headers,
-        headers: { ...headers.headers, "Content-Type": "multipart/form-data" }
-      });
-      const newEntry: PortfolioItem = {
-        _id: data.id,
-        title: data.title,
-        description: data.description,
-        mediaUrl: data.url,
-        link: data.link,
-        createdAt: data.createdAt
+      const fileName = asset.fileName || `portfolio-${Date.now()}.jpg`;
+      const contentType = asset.type || "image/jpeg";
+      const presign = await requestPresign({ purpose: "portfolio", fileName, contentType });
+      const blob = await readBlobFromUri(asset.uri);
+      await uploadToS3(presign.url, blob, contentType);
+      const payloadMeta = {
+        title: portfolioTitle.trim(),
+        description: portfolioDesc.trim(),
+        link: portfolioLink.trim(),
+        type: asset.type?.includes("video") ? "video" : "image"
       };
-      setPortfolio((prev) => [newEntry, ...prev]);
+      const { item, portfolio: updatedPortfolio } = await completeUpload("portfolio", presign.key, payloadMeta, portfolioTitle.trim() || asset.fileName);
+      if (updatedPortfolio) {
+        setPortfolio(updatedPortfolio);
+      } else if (item) {
+        setPortfolio((prev) => [item, ...prev]);
+      }
       loadUser?.();
       setPortfolioModal(false);
       setPortfolioTitle("");
@@ -173,14 +163,35 @@ export default function EditProfile() {
 
   const removePortfolio = async (id: string) => {
     try {
-      const headers = await authHeaders();
-      await api.delete(`/profile/portfolio/${id}`, headers);
+      await deletePortfolioItem(id);
       setPortfolio((prev) => prev.filter((item) => item._id !== id));
       loadUser?.();
     } catch {
       Alert.alert("Unable to delete right now");
     }
   };
+
+  const movePortfolioItem = useCallback(
+    async (index: number, direction: -1 | 1) => {
+      if (reorderBusy) return;
+      const target = index + direction;
+      if (target < 0 || target >= portfolio.length) return;
+      const updated = [...portfolio];
+      [updated[index], updated[target]] = [updated[target], updated[index]];
+      setPortfolio(updated);
+      setReorderBusy(true);
+      try {
+        await reorderPortfolio(updated.map((item) => item._id));
+      } catch (err) {
+        console.warn("reorder failed", err);
+        setPortfolio(portfolio);
+        Alert.alert("Unable to reorder right now");
+      } finally {
+        setReorderBusy(false);
+      }
+    },
+    [portfolio, reorderBusy]
+  );
 
   return (
     <View style={styles.container}>
@@ -249,9 +260,25 @@ export default function EditProfile() {
             <TouchableOpacity style={styles.portfolioPreviewAdd} onPress={() => setPortfolioModal(true)}>
               <Text style={styles.portfolioPreviewAddText}>+ Add work</Text>
             </TouchableOpacity>
-            {portfolio.map((item) => (
+            {portfolio.map((item, index) => (
               <View key={item._id} style={styles.portfolioPreviewCard}>
-                <Image source={{ uri: resolveMedia(item.mediaUrl) }} style={styles.portfolioPreviewImage} />
+                <Image source={{ uri: resolveMedia(item.url) }} style={styles.portfolioPreviewImage} />
+                <View style={styles.portfolioPreviewControls}>
+                  <TouchableOpacity
+                    disabled={index === 0 || reorderBusy}
+                    style={[styles.reorderBtn, index === 0 && styles.reorderBtnDisabled]}
+                    onPress={() => movePortfolioItem(index, -1)}
+                  >
+                    <Text style={styles.reorderText}>↑</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    disabled={index === portfolio.length - 1 || reorderBusy}
+                    style={[styles.reorderBtn, index === portfolio.length - 1 && styles.reorderBtnDisabled]}
+                    onPress={() => movePortfolioItem(index, 1)}
+                  >
+                    <Text style={styles.reorderText}>↓</Text>
+                  </TouchableOpacity>
+                </View>
                 <TouchableOpacity style={styles.portfolioPreviewRemove} onPress={() => removePortfolio(item._id)}>
                   <Text style={styles.portfolioPreviewRemoveText}>✕</Text>
                 </TouchableOpacity>
@@ -446,6 +473,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface
   },
   portfolioPreviewImage: { width: "100%", height: "100%" },
+  portfolioPreviewControls: {
+    position: "absolute",
+    bottom: 10,
+    left: 10,
+    flexDirection: "row"
+  },
   portfolioPreviewRemove: {
     position: "absolute",
     top: 8,
@@ -455,6 +488,15 @@ const styles = StyleSheet.create({
     padding: 4
   },
   portfolioPreviewRemoveText: { color: "#fff", fontWeight: "700" },
+  reorderBtn: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    marginRight: 6
+  },
+  reorderBtnDisabled: { opacity: 0.4 },
+  reorderText: { color: colors.textPrimary, fontWeight: "700" },
   deleteBtn: {
     marginLeft: 10,
     padding: 8,
