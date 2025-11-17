@@ -1,7 +1,27 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./kpr-app/tsconfig.json" },
-    { "path": "./kpr-backend/tsconfig.json" }
-  ]
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "jsx": "react-native",
+    "allowJs": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": false,
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "allowArbitraryExtensions": true,
+    "baseUrl": "."
+  },
+  "include": [
+    "kpr-app/src/**/*",
+    "kpr-app/**/*.ts",
+    "kpr-app/**/*.tsx",
+    "kpr-backend/src/**/*",
+    "kpr-backend/**/*.ts"
+  ],
+  "exclude": ["**/node_modules", "kpr-app/ios/Pods", "kpr-app/android/Pods"]
 }

@@ -103,9 +103,9 @@ export default function EditProfile() {
   const pickBanner = async () => {
     try {
       setUploadingBanner(true);
-    const result = await launchImageLibrary({ mediaType: "photo", quality: 1 });
+      const result = await launchImageLibrary({ mediaType: "photo", quality: 0.8, selectionLimit: 1 });
       const asset = result.assets?.[0];
-      if (!asset) return;
+      if (!asset?.uri) return;
       const form = new FormData();
       form.append("file", {
         // @ts-ignore
@@ -114,7 +114,7 @@ export default function EditProfile() {
         name: asset.fileName || `banner-${Date.now()}.jpg`
       });
       const headers = await authHeaders();
-      await api.post("/users/me/banner", form, {
+      await api.post("/profile/banner", form, {
         ...headers,
         headers: { ...headers.headers, "Content-Type": "multipart/form-data" }
       });
@@ -131,9 +131,9 @@ export default function EditProfile() {
   const submitPortfolio = async () => {
     try {
       setPortfolioUploading(true);
-    const result = await launchImageLibrary({ mediaType: "photo", quality: 1 });
+      const result = await launchImageLibrary({ mediaType: "photo", quality: 0.8, selectionLimit: 1 });
       const asset = result.assets?.[0];
-      if (!asset) return;
+      if (!asset?.uri) return;
       const form = new FormData();
       form.append("file", {
         // @ts-ignore
@@ -141,15 +141,23 @@ export default function EditProfile() {
         type: asset.type || "image/jpeg",
         name: asset.fileName || `portfolio-${Date.now()}.jpg`
       });
-      form.append("title", portfolioTitle);
-      form.append("description", portfolioDesc);
-      form.append("link", portfolioLink);
+      form.append("title", portfolioTitle.trim());
+      form.append("description", portfolioDesc.trim());
+      form.append("link", portfolioLink.trim());
       const headers = await authHeaders();
-      const { data } = await api.post("/users/me/portfolio", form, {
+      const { data } = await api.post("/profile/portfolio", form, {
         ...headers,
         headers: { ...headers.headers, "Content-Type": "multipart/form-data" }
       });
-      setPortfolio((prev) => [...prev, data.item]);
+      const newEntry: PortfolioItem = {
+        _id: data.id,
+        title: data.title,
+        description: data.description,
+        mediaUrl: data.url,
+        link: data.link,
+        createdAt: data.createdAt
+      };
+      setPortfolio((prev) => [newEntry, ...prev]);
       loadUser?.();
       setPortfolioModal(false);
       setPortfolioTitle("");
@@ -166,7 +174,7 @@ export default function EditProfile() {
   const removePortfolio = async (id: string) => {
     try {
       const headers = await authHeaders();
-      await api.delete(`/users/me/portfolio/${id}`, headers);
+      await api.delete(`/profile/portfolio/${id}`, headers);
       setPortfolio((prev) => prev.filter((item) => item._id !== id));
       loadUser?.();
     } catch {
@@ -237,22 +245,22 @@ export default function EditProfile() {
           <TouchableOpacity style={styles.addPortfolioBtn} onPress={() => setPortfolioModal(true)}>
             <Text style={styles.addPortfolioText}>Add featured work</Text>
           </TouchableOpacity>
-          {portfolio.length ? (
-            portfolio.map((item) => (
-              <View key={item._id} style={styles.portfolioRow}>
-                <Image source={{ uri: resolveMedia(item.mediaUrl) }} style={styles.portfolioThumb} />
-                <View style={styles.portfolioInfo}>
-                  <Text style={styles.portfolioRowTitle}>{item.title || "Untitled"}</Text>
-                  {item.description ? <Text style={styles.portfolioRowDesc} numberOfLines={2}>{item.description}</Text> : null}
-                </View>
-                <TouchableOpacity onPress={() => removePortfolio(item._id)} style={styles.deleteBtn}>
-                  <Text style={styles.deleteBtnText}>✕</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.portfolioPreviewRow}> 
+            <TouchableOpacity style={styles.portfolioPreviewAdd} onPress={() => setPortfolioModal(true)}>
+              <Text style={styles.portfolioPreviewAddText}>+ Add work</Text>
+            </TouchableOpacity>
+            {portfolio.map((item) => (
+              <View key={item._id} style={styles.portfolioPreviewCard}>
+                <Image source={{ uri: resolveMedia(item.mediaUrl) }} style={styles.portfolioPreviewImage} />
+                <TouchableOpacity style={styles.portfolioPreviewRemove} onPress={() => removePortfolio(item._id)}>
+                  <Text style={styles.portfolioPreviewRemoveText}>✕</Text>
                 </TouchableOpacity>
               </View>
-            ))
-          ) : (
+            ))}
+          </ScrollView>
+          {!portfolio.length ? (
             <Text style={styles.emptyCopy}>No portfolio pieces yet. Spotlight your projects to earn instant trust.</Text>
-          )}
+          ) : null}
         </Section>
 
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
@@ -411,15 +419,42 @@ const styles = StyleSheet.create({
     marginBottom: 16
   },
   addPortfolioText: { color: colors.accentSecondary, fontWeight: "700" },
-  portfolioRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14
+  portfolioPreviewRow: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    alignItems: "center"
   },
-  portfolioInfo: { flex: 1 },
-  portfolioThumb: { width: 64, height: 64, borderRadius: 16, marginRight: 12, backgroundColor: "#140a1e" },
-  portfolioRowTitle: { color: colors.textPrimary, fontWeight: "700" },
-  portfolioRowDesc: { color: colors.textSecondary, marginTop: 4 },
+  portfolioPreviewAdd: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.accentSecondary,
+    borderRadius: 16,
+    padding: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12
+  },
+  portfolioPreviewAddText: { color: colors.accentSecondary, fontWeight: "700" },
+  portfolioPreviewCard: {
+    width: 120,
+    height: 120,
+    marginRight: 12,
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface
+  },
+  portfolioPreviewImage: { width: "100%", height: "100%" },
+  portfolioPreviewRemove: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    borderRadius: 12,
+    padding: 4
+  },
+  portfolioPreviewRemoveText: { color: "#fff", fontWeight: "700" },
   deleteBtn: {
     marginLeft: 10,
     padding: 8,

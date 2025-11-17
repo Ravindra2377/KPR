@@ -131,8 +131,8 @@ export default function DiscoverScreen() {
         <View>
           {shimmerRows.map((row) => (
             <View style={styles.shimmerCard} key={`shimmer-${row}`}>
-              <ShimmerPlaceHolder style={styles.shimmerLine} autoRun visible={false} />
-              <ShimmerPlaceHolder style={[styles.shimmerLine, styles.shimmerSmall]} autoRun visible={false} />
+              <ShimmerPlaceHolder style={styles.shimmerLine} visible={false} />
+              <ShimmerPlaceHolder style={[styles.shimmerLine, styles.shimmerSmall]} visible={false} />
             </View>
           ))}
         </View>

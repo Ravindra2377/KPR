@@ -8,7 +8,6 @@ import {
   FlatList,
   Linking,
   Animated,
-  Dimensions,
   Modal,
   Pressable,
   ScrollView
@@ -25,9 +24,10 @@ import { PortfolioItem, ProfileUser, SocialLinks } from "../../types/profile";
 import { fetchMyPods } from "../../api/pods";
 import type { Pod } from "../../types/pods";
 import { formatRelativeTime } from "../../utils/time";
+import ProfileBannerParallax, { BANNER_HEIGHT } from "../../components/ProfileBannerParallax";
+import PortfolioCarousel from "../../components/PortfolioCarousel";
 
 const DEFAULT_AVATAR = require("../../assets/default-avatar.png");
-const BANNER_HEIGHT = 240;
 
 const SOCIAL_BUTTONS = [
   { key: "instagram", label: "IG", icon: "📸", color: "#E1306C" },
@@ -102,18 +102,22 @@ export default function Profile() {
     nav.reset({ index: 0, routes: [{ name: "Auth" }] });
   };
 
-  const bannerSource = profile?.banner ? { uri: resolveMedia(profile.banner) } : null;
-
-  const animatedBannerStyle = {
-    transform: [
-      {
-        translateY: scrollY.interpolate({ inputRange: [-120, 0, 120], outputRange: [-60, 0, 30] })
-      },
-      {
-        scale: scrollY.interpolate({ inputRange: [-120, 0], outputRange: [1.2, 1], extrapolateRight: "clamp" })
-      }
-    ]
+  const openPortfolioItem = (id: string) => {
+    const match = profile?.portfolio?.find((entry) => entry._id === id) ?? null;
+    setSelectedItem(match);
   };
+
+  const bannerUrl = profile?.banner ? resolveMedia(profile.banner) : undefined;
+  const portfolioItems = useMemo(
+    () =>
+      (profile?.portfolio || []).map((item) => ({
+        id: item._id,
+        url: resolveMedia(item.mediaUrl),
+        title: item.title,
+        description: item.description
+      })),
+    [profile?.portfolio]
+  );
 
   const sections = useMemo(
     () => [
@@ -141,21 +145,21 @@ export default function Profile() {
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
       >
         <View style={styles.bannerContainer}>
-          <Animated.View style={[styles.banner, animatedBannerStyle]}>
-            {bannerSource ? (
-              <Image source={bannerSource} style={styles.bannerImage} />
-            ) : (
-              <LinearGradient colors={[colors.accentPrimary, colors.accentSecondary]} style={styles.bannerImage}>
-                <Text style={styles.bannerFallback}>Drop a banner to flex your vibe.</Text>
-              </LinearGradient>
-            )}
-          </Animated.View>
-          <LinearGradient colors={["rgba(0,0,0,0.65)", "rgba(11,9,22,1)"]} style={styles.bannerOverlay} />
+          <ProfileBannerParallax bannerUrl={bannerUrl} scrollY={scrollY}>
+            <View style={styles.headerRow}>
+              <Image
+                source={profile.avatar ? { uri: resolveMedia(profile.avatar) } : DEFAULT_AVATAR}
+                style={styles.avatar}
+              />
+              <View style={styles.headerTextWrap}>
+                <Text style={styles.name}>{profile.name}</Text>
+                <Text style={styles.headline}>{profile.about || profile.bio || profile.email}</Text>
+              </View>
+            </View>
+          </ProfileBannerParallax>
         </View>
 
         <View style={styles.profileCard}>
-          <Image source={profile.avatar ? { uri: profile.avatar } : DEFAULT_AVATAR} style={styles.avatar} />
-          <Text style={styles.name}>{profile.name}</Text>
           <Text style={styles.email}>{profile.email}</Text>
 
           {profile.roles?.length ? (
@@ -239,7 +243,7 @@ export default function Profile() {
           <SectionCard key={section.title} title={section.title} value={section.value ?? ""} />
         ))}
 
-        {profile.portfolio?.length ? (
+        {portfolioItems.length ? (
           <View style={styles.sectionBlock}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Featured works</Text>
@@ -247,29 +251,7 @@ export default function Profile() {
                 <Text style={styles.sectionAction}>Manage</Text>
               </TouchableOpacity>
             </View>
-            <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={profile.portfolio}
-              keyExtractor={(item) => item._id}
-              contentContainerStyle={styles.portfolioListContent}
-              ItemSeparatorComponent={PortfolioSeparator}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.portfolioCard} onPress={() => setSelectedItem(item)}>
-                  <Image source={{ uri: resolveMedia(item.mediaUrl) }} style={styles.portfolioImage} />
-                  <View style={styles.portfolioTextWrap}>
-                    <Text style={styles.portfolioTitle} numberOfLines={1}>
-                      {item.title || "Untitled"}
-                    </Text>
-                    {item.description ? (
-                      <Text style={styles.portfolioDesc} numberOfLines={2}>
-                        {item.description}
-                      </Text>
-                    ) : null}
-                  </View>
-                </TouchableOpacity>
-              )}
-            />
+            <PortfolioCarousel items={portfolioItems} onOpen={(item) => openPortfolioItem(item.id)} />
           </View>
         ) : (
           <View style={styles.sectionBlock}>
@@ -364,10 +346,6 @@ function SectionCard({ title, value }: { title: string; value: string }) {
   );
 }
 
-function PortfolioSeparator() {
-  return <View style={styles.portfolioSeparator} />;
-}
-
 function CollaboratorSeparator() {
   return <View style={styles.collabSeparator} />;
 }
@@ -404,25 +382,9 @@ const styles = StyleSheet.create({
   loadingWrap: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background },
   loadingText: { color: colors.textSecondary },
   bannerContainer: { height: BANNER_HEIGHT },
-  banner: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  bannerImage: { width: "100%", height: "100%", borderBottomLeftRadius: 32, borderBottomRightRadius: 32 },
-  bannerOverlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    top: 0,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32
-  },
-  bannerFallback: {
-    color: "rgba(255,255,255,0.8)",
-    textAlign: "center",
-    fontSize: 16,
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    ...typography.heading
-  },
+  headerRow: { flexDirection: "row", alignItems: "center", marginTop: 24 },
+  headerTextWrap: { marginLeft: 12 },
+  headline: { color: colors.textSecondary, ...typography.body },
   profileCard: {
     marginTop: -60,
     marginHorizontal: 20,
@@ -535,24 +497,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { color: colors.accentPrimary, fontSize: 18, ...typography.heading },
   sectionAction: { color: colors.accentSecondary, ...typography.accent },
-  portfolioCard: {
-    width: Dimensions.get("window").width * 0.7,
-    borderRadius: 20,
-    overflow: "hidden",
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 6
-  },
-  portfolioImage: { width: "100%", height: 180 },
-  portfolioTextWrap: { padding: 16 },
-  portfolioTitle: { color: colors.textPrimary, fontSize: 16, ...typography.heading },
-  portfolioDesc: { color: colors.textSecondary, marginTop: 8, ...typography.body },
-  portfolioListContent: { paddingHorizontal: 20 },
-  portfolioSeparator: { width: 16 },
   emptyText: { color: colors.textSecondary, paddingHorizontal: 20, ...typography.body },
   socialRow: { paddingHorizontal: 20, paddingBottom: 6 },
   socialBtn: {
