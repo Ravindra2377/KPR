@@ -1,101 +1,163 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface ITask {
+export interface IRoleSlot {
+  _id?: mongoose.Types.ObjectId;
   title: string;
   description?: string;
-  status: "todo" | "inprogress" | "done";
-  assignee?: mongoose.Types.ObjectId;
+  requiredSkills?: string[];
+  slots?: number;
+  filledBy?: mongoose.Types.ObjectId | null;
+  open: boolean;
+}
+
+export interface IPodMember {
+  user: mongoose.Types.ObjectId;
+  role?: string;
+  joinedAt?: Date;
+  accepted?: boolean;
+}
+
+export interface IPodApplicant {
+  _id?: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
+  message?: string;
+  roleName?: string;
+  roleId?: mongoose.Types.ObjectId;
+  status: "pending" | "accepted" | "rejected" | "cancelled";
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface IRoleApplicant {
+export interface IPodInvite {
   user: mongoose.Types.ObjectId;
-  message?: string;
+  roleName?: string;
+  roleId?: mongoose.Types.ObjectId;
+  status: "pending" | "accepted" | "rejected";
+  invitedBy: mongoose.Types.ObjectId;
   createdAt?: Date;
 }
 
-export interface IPodRole {
-  id: string;
-  title: string;
-  slots: number;
-  filled: number;
-  skills: string[];
-  applicants: IRoleApplicant[];
+export interface IPodActivity {
+  _id?: mongoose.Types.ObjectId;
+  type: string;
+  user: mongoose.Types.ObjectId;
+  meta?: any;
+  createdAt?: Date;
 }
 
 export interface IPod extends Document {
   name: string;
+  subtitle?: string;
   description?: string;
   owner: mongoose.Types.ObjectId;
-  members: mongoose.Types.ObjectId[];
-  tasks: ITask[];
-  roles: IPodRole[];
-  skills: string[];
-  tags: string[];
-  visibility: "public" | "private" | "invite";
-  location?: {
-    country?: string;
-    city?: string;
+  cover?: {
+    url?: string;
+    alt?: string;
   };
-  coverImage?: string;
-  boosted?: boolean;
+  tags: string[];
+  visibility: "public" | "unlisted" | "private";
+  roles: IRoleSlot[];
+  members: IPodMember[];
+  applicants: IPodApplicant[];
+  invites: IPodInvite[];
+  activity: IPodActivity[];
+  skills: string[];
+  location?: { city?: string; country?: string };
+  boosted?: {
+    active: boolean;
+    endsAt?: Date;
+    meta?: any;
+  };
+  activityCount: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const TaskSchema = new Schema<ITask>(
+const RoleSlotSchema = new Schema<IRoleSlot>(
   {
     title: { type: String, required: true },
     description: String,
-    status: { type: String, enum: ["todo", "inprogress", "done"], default: "todo" },
-    assignee: { type: Schema.Types.ObjectId, ref: "User" }
+    requiredSkills: [{ type: String }],
+    slots: { type: Number, default: 1 },
+    filledBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    open: { type: Boolean, default: true }
   },
-  { timestamps: true }
+  { _id: true }
 );
 
-const RoleApplicantSchema = new Schema<IRoleApplicant>(
+const MemberSchema = new Schema<IPodMember>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    message: String
+    role: { type: String },
+    joinedAt: { type: Date, default: Date.now },
+    accepted: { type: Boolean, default: true }
+  },
+  { _id: false }
+);
+
+const ApplicantSchema = new Schema<IPodApplicant>(
+  {
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    message: String,
+    roleName: String,
+    roleId: { type: Schema.Types.ObjectId },
+    status: { type: String, enum: ["pending", "accepted", "rejected", "cancelled"], default: "pending" }
   },
   { timestamps: true }
 );
 
-const RoleSchema = new Schema<IPodRole>(
+const InviteSchema = new Schema<IPodInvite>(
   {
-    id: { type: String, required: true },
-    title: { type: String, required: true },
-    slots: { type: Number, default: 1 },
-    filled: { type: Number, default: 0 },
-    skills: [String],
-    applicants: [RoleApplicantSchema]
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    roleName: String,
+    roleId: { type: Schema.Types.ObjectId },
+    status: { type: String, enum: ["pending", "accepted", "rejected"], default: "pending" },
+    invitedBy: { type: Schema.Types.ObjectId, ref: "User", required: true }
   },
-  { _id: false }
+  { timestamps: true }
+);
+
+const ActivitySchema = new Schema<IPodActivity>(
+  {
+    type: { type: String, required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    meta: Schema.Types.Mixed
+  },
+  { timestamps: true }
 );
 
 const PodSchema = new Schema<IPod>(
   {
     name: { type: String, required: true },
+    subtitle: String,
     description: String,
-    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  members: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: [] },
-  tasks: { type: [TaskSchema], default: [] },
-  roles: { type: [RoleSchema], default: [] },
-  skills: { type: [String], default: [] },
-  tags: { type: [String], default: [] },
-    visibility: { type: String, enum: ["public", "private", "invite"], default: "public" },
-    location: {
-      country: String,
-      city: String
+    cover: {
+      url: String,
+      alt: String
     },
-    coverImage: String,
-    boosted: { type: Boolean, default: false }
+    tags: [{ type: String }],
+    visibility: { type: String, enum: ["public", "unlisted", "private"], default: "public" },
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    members: { type: [MemberSchema], default: [] },
+    applicants: { type: [ApplicantSchema], default: [] },
+    invites: { type: [InviteSchema], default: [] },
+    roles: { type: [RoleSlotSchema], default: [] },
+    activity: { type: [ActivitySchema], default: [] },
+    activityCount: { type: Number, default: 0 },
+    skills: { type: [String], default: [] },
+    location: { city: String, country: String },
+    boosted: {
+      active: { type: Boolean, default: false },
+      endsAt: Date,
+      meta: Schema.Types.Mixed
+    }
   },
   { timestamps: true }
 );
 
-PodSchema.index({ skills: 1 });
+PodSchema.index({ name: "text", description: "text" });
 PodSchema.index({ tags: 1 });
+PodSchema.index({ "roles.title": 1 });
 PodSchema.index({ visibility: 1 });
-PodSchema.index({ updatedAt: -1 });
 
 export default mongoose.model<IPod>("Pod", PodSchema);
