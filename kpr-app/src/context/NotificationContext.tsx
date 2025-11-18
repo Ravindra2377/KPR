@@ -10,6 +10,7 @@ interface NotificationValue {
   reload: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
+  socket: Socket | null;
 }
 
 export const NotificationContext = createContext<NotificationValue>({
@@ -18,13 +19,15 @@ export const NotificationContext = createContext<NotificationValue>({
   load: async () => {},
   reload: async () => {},
   markRead: async () => {},
-  markAllRead: async () => {}
+  markAllRead: async () => {},
+  socket: null
 });
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -52,14 +55,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const connectSocket = async () => {
       const userId = await AsyncStorage.getItem("kpr_user_id");
       if (!userId) return;
-      const socket = io(BASE_URL.replace(/\/api$/, ""), { transports: ["websocket"] });
-      socketRef.current = socket;
+      const client = io(BASE_URL.replace(/\/api$/, ""), { transports: ["websocket"] });
+      socketRef.current = client;
+      setSocket(client);
 
-      socket.on("connect", () => {
-        socket.emit("identify", { userId });
+      client.on("connect", () => {
+        client.emit("identify", { userId });
       });
 
-      socket.on("notification", (notif: any) => {
+      client.on("notification", (notif: any) => {
         if (!isMounted) return;
         setNotifications((prev) => [notif, ...prev]);
         setUnreadCount((c) => c + (notif.read ? 0 : 1));
@@ -72,6 +76,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       isMounted = false;
       socketRef.current?.disconnect();
       socketRef.current = null;
+      setSocket(null);
     };
   }, []);
 
@@ -104,7 +109,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, load: loadNotifications, reload: loadNotifications, markRead, markAllRead }}>
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        unreadCount,
+        load: loadNotifications,
+        reload: loadNotifications,
+        markRead,
+        markAllRead,
+        socket
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );

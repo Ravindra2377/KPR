@@ -1,16 +1,21 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useContext, useEffect, useRef } from "react";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { Alert, StyleSheet, View, Text, TouchableOpacity } from "react-native";
 import JitsiMeet, { JitsiMeetView } from "react-native-jitsi-meet";
 import { colors } from "../../theme/colors";
 import type { RootStackParamList } from "../../navigation/AppNavigator";
+import api from "../../api/client";
+import { NotificationContext } from "../../context/NotificationContext";
 
 type HuddleRoute = RouteProp<RootStackParamList, "HuddleCall">;
 
 export default function HuddleCall() {
   const route = useRoute<HuddleRoute>();
   const navigation = useNavigation<any>();
-  const { url, title } = route.params;
+  const { socket } = useContext(NotificationContext);
+  const { url, title, huddleId, isHost } = route.params;
+  const currentUserId = (globalThis as any).__KPR_USER_ID;
+  const hasEndedRef = useRef(false);
 
   useEffect(() => {
     const userInfo = {
@@ -32,10 +37,46 @@ export default function HuddleCall() {
     };
   }, [url]);
 
-  const handleLeave = () => {
+  const endHuddle = useCallback(async () => {
+    if (!isHost || !huddleId || hasEndedRef.current) return;
+    hasEndedRef.current = true;
+    try {
+      const token = (globalThis as any).__KPR_TOKEN;
+      if (!token) return;
+      await api.post(`/huddles/${huddleId}/end`, {}, { headers: { Authorization: `Bearer ${token}` } });
+    } catch (err) {
+      console.warn("end huddle error", err);
+    }
+  }, [huddleId, isHost]);
+
+  useEffect(() => {
+    return () => {
+      endHuddle();
+    };
+  }, [endHuddle]);
+
+  useEffect(() => {
+    if (!socket || !huddleId) return;
+    const handler = (payload: { huddleId?: string; endedBy?: string; roomId?: string }) => {
+      if (payload.huddleId !== huddleId) return;
+      if (payload.endedBy === currentUserId) return;
+      if (hasEndedRef.current) return;
+      hasEndedRef.current = true;
+      JitsiMeet.endCall();
+      navigation.goBack();
+      Alert.alert("Huddle ended", "The huddle was closed.");
+    };
+    socket.on("huddleEnded", handler);
+    return () => {
+      socket.off("huddleEnded", handler);
+    };
+  }, [socket, huddleId, currentUserId, navigation]);
+
+  const handleLeave = useCallback(async () => {
     JitsiMeet.endCall();
+    await endHuddle();
     navigation.goBack();
-  };
+  }, [endHuddle, navigation]);
 
   return (
     <View style={styles.container}>

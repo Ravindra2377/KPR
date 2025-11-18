@@ -57,7 +57,7 @@ export type RootStackParamList = {
   RequestsInbox: undefined;
   CollaboratorsList: { userId: string; userName: string };
   CollabHistory: { userId: string };
-  HuddleCall: { url: string; title?: string };
+  HuddleCall: { url: string; title?: string; huddleId?: string; isHost?: boolean; roomId?: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();

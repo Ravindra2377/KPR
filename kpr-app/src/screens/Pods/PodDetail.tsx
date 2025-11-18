@@ -9,6 +9,7 @@ export default function PodDetail() {
   const route = useRoute<any>();
   const nav = useNavigation<any>();
   const podId = route.params?.podId || route.params?.id;
+  const currentUserId = (globalThis as any).__KPR_USER_ID;
   const [pod, setPod] = useState<any>(null);
   const [boostVisible, setBoostVisible] = useState(false);
 
@@ -49,11 +50,34 @@ export default function PodDetail() {
       Alert.alert("Error", "Pod ID missing");
       return;
     }
+    if (!pod) {
+      Alert.alert("Error", "Pod not loaded yet");
+      return;
+    }
     try {
       const token = (globalThis as any).__KPR_TOKEN;
-      const res = await api.post(`/huddles/create`, { podId }, { headers: { Authorization: `Bearer ${token}` } });
-      const { jitsiRoom } = res.data;
-      nav.navigate("HuddleCall", { url: jitsiRoom, title: pod?.name });
+      const memberIds = (pod.members || []).map((member: any) => member._id).filter(Boolean);
+      const participants = Array.from(new Set([...(pod.owner?._id ? [pod.owner._id] : []), ...memberIds])).filter(
+        (id) => id && id !== currentUserId
+      );
+      if (!participants.length) {
+        Alert.alert("No participants", "Invite someone to this pod before starting a huddle.");
+        return;
+      }
+      const res = await api.post(
+        `/huddles/create`,
+        { roomId: pod._id, participants, type: "pod" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const url = res.data?.url;
+      if (!url) throw new Error("Missing huddle URL");
+      nav.navigate("HuddleCall", {
+        url,
+        title: `Huddle • ${pod?.name}`,
+        huddleId: res.data?.huddleId,
+        roomId: res.data?.roomId || pod._id,
+        isHost: true
+      });
     } catch (err) {
       console.warn(err);
       Alert.alert("Error", "Unable to start huddle");

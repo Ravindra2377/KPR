@@ -64,6 +64,7 @@ export default function DMChat() {
 
   const headerName = useMemo(() => partner?.name || room.name?.replace?.("DM • ", "") || "Direct message", [partner?.name, room.name]);
   const normalizedMembers = useMemo(() => (room.members || []).map((member) => String(member)).filter(Boolean), [room.members]);
+  const partnerId = useMemo(() => partner?._id || undefined, [partner]);
 
   useEffect(() => {
     typingOpacity.value = typingCount > 0 ? 1 : 0;
@@ -139,6 +140,47 @@ export default function DMChat() {
       }
     });
 
+    socket.on("dmReadReceipt", ({ roomId, readerId }: { roomId?: string; readerId?: string }) => {
+      if (roomId !== room._id || !readerId || readerId === currentUserId) return;
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.roomId !== roomId || msg.author === readerId) return msg;
+          const alreadyRead = msg.readBy || [];
+          if (alreadyRead.includes(readerId)) return msg;
+          return { ...msg, readBy: [...alreadyRead, readerId] };
+        })
+      );
+    });
+
+    socket.on(
+      "huddleStarted",
+      (payload: { roomId?: string; url?: string; huddleId?: string; roomName?: string }) => {
+        if (payload.roomId !== room._id) return;
+        const url = payload.url;
+        if (!url) return;
+        Alert.alert(
+          "Huddle started",
+          `${payload.roomName || headerName} huddle is live. Join now?`,
+          [
+            { text: "Later", style: "cancel" },
+            {
+              text: "Join",
+              onPress: () => {
+                navigation.navigate("HuddleCall", {
+                  url,
+                  title: `Huddle • ${headerName}`,
+                  huddleId: payload.huddleId,
+                  roomId: payload.roomId,
+                  isHost: false
+                });
+              }
+            }
+          ],
+          { cancelable: true }
+        );
+      }
+    );
+
     socket.on("userTyping", ({ userId, isTyping, userName }: { userId?: string; isTyping?: boolean; userName?: string }) => {
       if (!userId || userId === currentUserId) return;
       if (isTyping) {
@@ -154,12 +196,14 @@ export default function DMChat() {
 
     return () => {
       socket.removeAllListeners("roomMessage");
+      socket.removeAllListeners("dmReadReceipt");
+      socket.removeAllListeners("huddleStarted");
       socket.removeAllListeners("userTyping");
       socket.disconnect();
       setTypingUsers({});
       typingOpacity.value = 0;
     };
-  }, [room._id, currentUserId, typingOpacity, markReadDebounced]);
+  }, [room._id, currentUserId, typingOpacity, markReadDebounced, navigation, headerName]);
 
   const emitTyping = useCallback(
     (isTyping: boolean) => {
@@ -217,7 +261,7 @@ export default function DMChat() {
     }
     try {
       setStartingHuddle(true);
-  const participantIds = normalizedMembers.filter((id) => id && id !== currentUserId);
+      const participantIds = normalizedMembers.filter((id) => id && id !== currentUserId);
       if (!participantIds.length && partner?._id) {
         participantIds.push(partner._id);
       }
@@ -232,7 +276,13 @@ export default function DMChat() {
       );
       const url = response.data?.url;
       if (!url) throw new Error("Missing huddle URL");
-      navigation.navigate("HuddleCall", { url, title: `Huddle • ${headerName}` });
+      navigation.navigate("HuddleCall", {
+        url,
+        title: `Huddle • ${headerName}`,
+        huddleId: response.data?.huddleId,
+        roomId: room._id,
+        isHost: true
+      });
     } catch (err: any) {
       console.warn("start huddle", err);
       Alert.alert("Unable to start huddle", err?.response?.data?.message || err?.message || "Please try again.");
@@ -255,6 +305,9 @@ export default function DMChat() {
           <Text style={styles.msgTime}>
             {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
           </Text>
+          {isMine && partnerId && item.readBy?.includes(partnerId) ? (
+            <Text style={styles.readReceipt}>Seen</Text>
+          ) : null}
         </View>
       </Animated.View>
     );
@@ -405,5 +458,6 @@ const styles = StyleSheet.create({
   bubbleMe: { backgroundColor: colors.accentSecondary, borderBottomRightRadius: 6 },
   msgText: { color: colors.textPrimary, fontSize: 15, ...typography.body },
   msgSender: { color: colors.textSecondary, marginBottom: 4, marginLeft: 4, fontSize: 12, ...typography.body },
-  msgTime: { color: "#C8C3D8", fontSize: 10, marginTop: 6, alignSelf: "flex-end" }
+  msgTime: { color: "#C8C3D8", fontSize: 10, marginTop: 6, alignSelf: "flex-end" },
+  readReceipt: { color: colors.textSecondary, fontSize: 10, alignSelf: "flex-end", marginTop: 2 }
 });

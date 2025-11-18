@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl } from "react-native";
+import { Alert, View, Text, StyleSheet, FlatList, TouchableOpacity, Image, RefreshControl } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { typography } from "../theme/typography";
 import ShimmerPlaceHolder from "react-native-shimmer-placeholder";
@@ -47,6 +47,7 @@ export default function DMInbox() {
   const [items, setItems] = useState<InboxEntry[]>([]);
   const socketRef = useRef<Socket | null>(null);
   const currentUserId = (globalThis as any).__KPR_USER_ID;
+  const itemsRef = useRef<InboxEntry[]>([]);
 
   const fetchInbox = useCallback(async () => {
     const token = (globalThis as any).__KPR_TOKEN;
@@ -72,6 +73,10 @@ export default function DMInbox() {
       setRefreshing(false);
     }
   }, []);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useFocusEffect(
     useCallback(() => {
@@ -109,14 +114,44 @@ export default function DMInbox() {
       setItems((prev) => prev.map((entry) => (entry.roomId === roomId ? { ...entry, unreadCount: 0 } : entry)));
     });
 
+    socket.on(
+      "huddleStarted",
+      (payload: { roomId?: string; url?: string; huddleId?: string; roomName?: string }) => {
+        if (!payload?.roomId || !payload.url) return;
+        const entry = itemsRef.current.find((item) => item.roomId === payload.roomId);
+        const label = entry?.other?.name || entry?.room?.name || payload.roomName || "Direct message";
+        Alert.alert(
+          "Huddle started",
+          `${label} huddle is live. Join now?`,
+          [
+            { text: "Later", style: "cancel" },
+            {
+              text: "Join",
+              onPress: () => {
+                navigation.navigate("HuddleCall", {
+                  url: payload.url,
+                  title: `Huddle • ${label}`,
+                  huddleId: payload.huddleId,
+                  roomId: payload.roomId,
+                  isHost: false
+                });
+              }
+            }
+          ],
+          { cancelable: true }
+        );
+      }
+    );
+
     return () => {
       socket.removeAllListeners("dmListUpdated");
       socket.removeAllListeners("presence");
       socket.removeAllListeners("dmReadReceipt");
+      socket.removeAllListeners("huddleStarted");
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [fetchInbox, currentUserId]);
+  }, [fetchInbox, currentUserId, navigation]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
