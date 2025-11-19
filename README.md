@@ -69,6 +69,17 @@ Creative Sanctuary MVP consisting of a TypeScript/Express backend (`kpr-backend`
   cd ../kpr-app; npm run lint
   ```
 
+## Pod Marketplace
+- `GET /api/pods/discover` now accepts rich filters (roles, visibility, tags, pagination) powering the hybrid/list/grid discovery views.
+- Owner-specific experience (`/api/pods/owner`, `/api/pods/:id/applicants/:applicantId/approve|reject`, `/api/pods/:id/members/:memberId/remove`) is backed by the new React Native screens under `src/screens/Pods`.
+- New navigation routes: `OwnerDashboard` and `ApplicantManager`. Wire them from wherever you offer owner-facing controls.
+- Update `src/api/pods.ts` with the owner helpers (`ownerPods`, `approveApplicant`, `rejectApplicant`, `removeMember`) and ensure JWT tokens are forwarded via `authHeaders()`.
+- Replace `PodFilters` with the debounced component that publishes `roles`, `tags`, and `visibility` filters to the API.
+- Testing checklist:
+  1. Create a pod as an owner; confirm it appears on `OwnerDashboard` with accurate counts.
+  2. Submit an applicant and verify `ApplicantManager` show pending entries that can be approved/rejected.
+  3. Approvals should create a DM room for the new member and emit the notification events (`podApplicationAccepted`, `podApplicationRejected`, `podMemberRemoved`).
+
 ## Next Steps
 - Add AsyncStorage for token persistence
 - Idea composer UI and backend validation
