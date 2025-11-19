@@ -21,6 +21,8 @@ import EditProfile from "../screens/EditProfile";
 import PodsDiscoverWithSwitcher from "../screens/Pods/PodsDiscoverWithSwitcher";
 import PodsIndex from "../screens/Pods/PodsIndex";
 import PodDetail from "../screens/Pods/PodDetail";
+import OwnerDashboard from "../screens/Pods/OwnerDashboard";
+import ApplicantManager from "../screens/Pods/ApplicantManager";
 import NotificationsCenter from "../screens/Notifications/NotificationsCenter";
 import RequestsInbox from "../screens/Collab/RequestsInbox";
 import CollaboratorsList from "../screens/Collab/CollaboratorsList";
@@ -49,6 +51,8 @@ export type RootStackParamList = {
   PodsDiscover: undefined;
   PodsIndex: { view?: "grid" | "list" | "hybrid" } | undefined;
   PodDetail: { podId?: string; id?: string; name?: string };
+  OwnerDashboard: undefined;
+  ApplicantManager: { podId: string };
   NotificationsCenter: undefined;
   Profile: undefined;
   EditProfile: undefined;
@@ -88,6 +92,8 @@ export default function AppNavigator({ navigationRef }: Props) {
         <Stack.Screen name="PodsDiscover" component={PodsDiscoverWithSwitcher} />
         <Stack.Screen name="PodsIndex" component={PodsIndex} />
         <Stack.Screen name="PodDetail" component={PodDetail} />
+  <Stack.Screen name="OwnerDashboard" component={OwnerDashboard} />
+  <Stack.Screen name="ApplicantManager" component={ApplicantManager} />
         <Stack.Screen name="NotificationsCenter" component={NotificationsCenter} />
         <Stack.Screen name="Profile" component={Profile} />
         <Stack.Screen name="EditProfile" component={EditProfile} />

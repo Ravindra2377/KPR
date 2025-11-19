@@ -23,6 +23,12 @@ const buildParams = (params?: PodFilterOptions) => {
   if (params.tags?.length) {
     payload.tags = params.tags.join(",");
   }
+  if (params.roles?.length) {
+    payload.roles = params.roles.join(",");
+  }
+  if (params.visibility) {
+    payload.visibility = params.visibility;
+  }
   return payload;
 };
 
@@ -34,46 +40,34 @@ export function fetchPod(podId: string) {
   return api.get<Pod>(`/pods/${podId}`, authHeaders());
 }
 
-export function fetchMyPods() {
-  return api.get<Pod[]>("/pods", authHeaders());
+export function createPod(payload: Partial<Pod>) {
+  return api.post<Pod>("/pods", payload, authHeaders());
 }
 
-export function applyToPod(podId: string, roleId: string, message?: string) {
+export function applyToPod(podId: string, roleName: string, message?: string) {
   return api.post(
     `/pods/${podId}/apply`,
-    { roleId, message },
+    { roleName, message },
     authHeaders()
   );
 }
 
-export function withdrawApplication(podId: string, roleId: string) {
-  return api.delete(`/pods/${podId}/role/${roleId}/applications`, authHeaders());
+export function approveApplicant(podId: string, applicantId: string) {
+  return api.post(`/pods/${podId}/applicants/${applicantId}/approve`, null, authHeaders());
 }
 
-export function acceptApplicant(podId: string, roleId: string, applicantId: string) {
-  return api.post(
-    `/pods/${podId}/role/${roleId}/accept`,
-    { userId: applicantId },
-    authHeaders()
-  );
+export function rejectApplicant(podId: string, applicantId: string, body?: any) {
+  return api.post(`/pods/${podId}/applicants/${applicantId}/reject`, body, authHeaders());
 }
 
-export function rejectApplicant(podId: string, roleId: string, applicantId: string) {
-  return api.post(
-    `/pods/${podId}/role/${roleId}/reject`,
-    { userId: applicantId },
-    authHeaders()
-  );
+export function inviteUserToPod(podId: string, userId: string, roleName?: string) {
+  return api.post(`/pods/${podId}/invite`, { userId, roleName }, authHeaders());
 }
 
-export function inviteUserToPod(podId: string, userId: string) {
-  return api.post(
-    `/pods/${podId}/invite`,
-    { userId },
-    authHeaders()
-  );
+export function ownerPods() {
+  return api.get("/pods/owner", authHeaders());
 }
 
 export function removeMember(podId: string, memberId: string) {
-  return api.delete(`/pods/${podId}/members/${memberId}`, authHeaders());
+  return api.post(`/pods/${podId}/members/${memberId}/remove`, null, authHeaders());
 }
