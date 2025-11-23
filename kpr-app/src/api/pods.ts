@@ -56,8 +56,16 @@ export function approveApplicant(podId: string, applicantId: string) {
   return api.post(`/pods/${podId}/applicants/${applicantId}/approve`, null, authHeaders());
 }
 
+export function acceptApplicant(podId: string, _roleId: string, applicantId: string) {
+  return approveApplicant(podId, applicantId);
+}
+
 export function rejectApplicant(podId: string, applicantId: string, body?: any) {
   return api.post(`/pods/${podId}/applicants/${applicantId}/reject`, body, authHeaders());
+}
+
+export function withdrawApplication(podId: string, applicantId: string) {
+  return api.post(`/pods/${podId}/applicants/${applicantId}/withdraw`, null, authHeaders());
 }
 
 export function inviteUserToPod(podId: string, userId: string, roleName?: string) {
@@ -70,4 +78,26 @@ export function ownerPods() {
 
 export function removeMember(podId: string, memberId: string) {
   return api.post(`/pods/${podId}/members/${memberId}/remove`, null, authHeaders());
+}
+
+export async function updateRole(
+  podId: string,
+  roleId: string,
+  updates: { name?: string; description?: string; capacity?: number },
+) {
+  const response = await api.put(`/pods/${podId}/roles/${roleId}`, updates, authHeaders());
+  return response.data;
+}
+
+export async function updatePodSettings(
+  podId: string,
+  settings: {
+    title?: string;
+    subtitle?: string;
+    tags?: string[];
+    visibility?: 'public' | 'private';
+  },
+) {
+  const response = await api.put(`/pods/${podId}/settings`, settings, authHeaders());
+  return response.data;
 }

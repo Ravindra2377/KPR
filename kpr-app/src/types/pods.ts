@@ -1,17 +1,23 @@
 export type PodTag = string;
 
 export type PodApplicant = {
+  _id?: string;
   userId: string;
   name?: string;
   avatar?: string;
   message?: string;
   requestedAt?: string;
+  status?: string;
 };
 
 export type PodRole = {
-  id: string;
-  title: string;
-  slots: number;
+  _id?: string;
+  id?: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  capacity?: number;
+  slots?: number;
   filled: number;
   skills?: string[];
   applicants?: PodApplicant[];

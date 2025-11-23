@@ -56,7 +56,12 @@ router.get("/:id", requireAuth, async (req: AuthRequest, res) => {
       .populate("invites.user", "name avatar");
 
     if (!pod) return res.status(404).json({ message: "Not found" });
-    res.json(pod);
+    const pendingApplications = (pod.applicants || [])
+      .filter((applicant: any) => String(applicant.user) === req.userId && applicant.status === "pending")
+      .map((applicant: any) => String(applicant._id));
+    const payload = pod.toObject() as any;
+    payload.userHasAppliedForRoleIds = pendingApplications;
+    res.json(payload);
   } catch (err) {
     console.error("pods/:id", err);
     res.status(500).json({ message: "Server error" });
@@ -222,6 +227,29 @@ router.post("/:id/applicants/:applicantId/reject", requireAuth, async (req: Auth
     res.json({ ok: true });
   } catch (err) {
     console.error("reject applicant", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * POST /api/pods/:id/applicants/:applicantId/withdraw - applicant withdraws
+ */
+router.post("/:id/applicants/:applicantId/withdraw", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const pod = await Pod.findById(req.params.id);
+    if (!pod) return res.status(404).json({ message: "Not found" });
+
+    const applicant = pod.applicants.find((a: any) => String(a._id) === req.params.applicantId);
+    if (!applicant) return res.status(404).json({ message: "Applicant not found" });
+    if (String(applicant.user) !== req.userId) return res.status(403).json({ message: "Not allowed" });
+    if (applicant.status !== "pending") return res.status(400).json({ message: "Invalid status" });
+
+    applicant.status = "cancelled";
+    await pod.save();
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("withdraw applicant", err);
     res.status(500).json({ message: "Server error" });
   }
 });

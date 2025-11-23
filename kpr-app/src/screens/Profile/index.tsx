@@ -21,7 +21,7 @@ import { typography } from "../../theme/typography";
 import { getCollaborators } from "../../utils/collaborators";
 import { BASE_URL } from "../../api/client";
 import { PortfolioItem, ProfileUser, SocialLinks } from "../../types/profile";
-import { fetchMyPods } from "../../api/pods";
+import { ownerPods } from "../../api/pods";
 import type { Pod } from "../../types/pods";
 import { formatRelativeTime } from "../../utils/time";
 import ProfileBannerParallax, { BANNER_HEIGHT } from "../../components/ProfileBannerParallax";
@@ -63,10 +63,10 @@ export default function Profile() {
     let mounted = true;
     setCollabLoading(true);
     getCollaborators(profile._id)
-      .then((list) => {
+      .then((list: any[]) => {
         if (mounted) setCollaborators(list);
       })
-      .catch((err) => console.warn("profile collaborators", err))
+      .catch((err: any) => console.warn("profile collaborators", err))
       .finally(() => mounted && setCollabLoading(false));
     return () => {
       mounted = false;
@@ -76,17 +76,17 @@ export default function Profile() {
   useEffect(() => {
     if (!profile?._id) return;
     let mounted = true;
-    fetchMyPods()
-      .then((res) => {
+    ownerPods()
+      .then((res: { data: Pod[] }) => {
         if (!mounted) return;
-        const pods = res.data || [];
+        const pods: Pod[] = res.data || [];
         setPodPreviews(pods.slice(0, 4));
         setPodStats({
           memberOf: pods.length,
-          ownerOf: pods.filter((item) => item.owner?._id === profile._id).length
+          ownerOf: pods.filter((item: Pod) => item.owner?._id === profile._id).length
         });
       })
-      .catch((err) => console.warn("profile pods", err));
+      .catch((err: any) => console.warn("profile pods", err));
     return () => {
       mounted = false;
     };
